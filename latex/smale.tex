@@ -1,0 +1,140 @@
+\documentclass{amsart}
+\usepackage{math}
+\begin{document}
+
+Pour commencer quelque part: j'ai regard\'e les d\'efinitions de ``smale space'', et essay\'e de les rendre uniformes. Mon premier jet est ci-dessous.
+
+Je refl\'echis d\'ej\`a \`a la syntaxe de Lean.
+
+(1) il me semble que c'est une bonne id\'ee de d'abord parler d'un espace avec crochet, et ensuite d'un hom\'eomorphisme. \c{C}a double le nombre de d\'efinitions, mais \c{c}a les rend plus courtes.
+
+(2) Je ne connais pas tr\`es bien la notation pour les structures uniformes. J'aimerais bien dire ``pour tous $x,y$ assez proches'', ce qui veut dire ``il existe un entourage $\mathcal U$ tel que pour tout $(x,y)\in\mathcal U$''; est-ce qu'on peut dire \c{c}a de mani\`ere plus compacte? Pour moi, les entourages sont toujours ouverts, j'esp\`ere que c'est le cas pour tout le monde.
+
+(3) qui est une cons\'equence de (2), il me semble bien de dire que le crochet est d\'efini partout, mais qu'il est continu seulement pr\`es de la diagonale, qu'il est pr\'eserv\'e par $f$ seulement pr\`es de la diagonale, etc. \c{C}a va peut-\^etre \'eviter un peu de yoga de coercion. L'inconv\'enient est qu'il faut le d\'efinir de mani\`ere d\'ebile (comme $x/0=0$) loin de la diagonale.
+
+(4) qui est une cons\'equence de (2), deux alg\`ebres de projection sont isomorphes si leurs crochets correspondent sur un entourage.
+
+\begin{defn}
+  Une \emph{ProjectionAlgebra} est
+  \begin{itemize}
+  \item un espace uniforme $X$;
+  \item un ``crochet de Ruelle'' $[,]\colon X^2\to X$
+  \end{itemize}
+  tels que:
+  \begin{enumerate}
+  \item il existe un entourage $\mathcal U$ sur lequel $[,]$ est uniform\'ement continu;
+  \item $[x,x]=x$;
+  \item il existe un entourage $\mathcal U$ tel que, pour tous $x,y,z$ avec $(x,y),(x,z),(y,z)\in\mathcal U$ on a
+    \[[[x,y],z]=[x,[y,z]]=[x,z].\]
+  \end{enumerate}
+\end{defn}
+
+\begin{lem}
+  Pour tout $n$ il existe un entourage $\mathcal U_n$ tel que, pour tous $x_1,\dots,x_n$ avec $\forall i,j:(x_i,x_j)\in\mathcal U$, on a
+  \[[x_1,x_2,\dots,x_n]=[x_1,x_n]\text{ quel que soit l'ordre des crochets au milieu}.\]
+\end{lem}
+
+On d\'efinit, pour un entourage $\mathcal V$, les sous-ensembles de $X$
+\[\mathcal V_x^-=\{u:u=[u,x],(u,x)\in\mathcal V\},\quad\mathcal V_x^+=\{u:u=[x,u],(u,x)\in\mathcal V\}.\]
+\begin{lem}
+  Il existe un entourage $\mathcal V$ tel que, pour tout $x$, la restriction de $[,]$ \`a $\mathcal V_x^-\times\mathcal V_x^+$ est un hom\'eomorphisme sur son image.
+\end{lem}
+\begin{proof}
+  On prend $\mathcal V$ assez fin pour que $(x,u),(x,v)\in\mathcal V\Rightarrow (x,[u,v])\in\mathcal U_4$.
+
+  \'Etant donn\'es $(x,y)\in\mathcal U_4$, on pose $u=[y,x],v=[x,y]$, et alors
+  \[u=[u,x],v=[x,v],[u,v]=y,[v,u]=x.\]
+  L'inverse de $[,]\colon\mathcal V_x^-\times\mathcal V_x^+\to X$, est donc donn\'e par $y\mapsto([y,x],[x,y])$.
+\end{proof}
+\begin{cor}
+  Si $(x,y)\in\mathcal U_4$ alors $\{[x,y]\}=\mathcal V_x^+\cap\mathcal V_y^-$ avec $\mathcal V=\mathcal U_3$.
+\end{cor}
+
+\begin{defn}
+  Un \emph{SmaleSpace} est
+  \begin{itemize}
+  \item une ProjectionAlgebra $X$;
+  \item un hom\'eomorphisme uniform\'ement continu $f\colon X\to X$
+  \end{itemize}
+  tels que:
+  \begin{enumerate}
+  \item il existe un entourage $\mathcal U$ avec $\forall(x,y)\in\mathcal U:f([x,y])=[f(x),f(y)]$;
+  \item il existe un entourage $\mathcal U$ tel que, pour tout entourage $\mathcal V\subset\mathcal U$, il existe un entourage $\mathcal W\subset\mathcal V$ ``beaucoup plus petit'' (``$\lambda$ fois plus petit''), avec
+    \[\forall x:f(\mathcal V_x^+)\subseteq \mathcal W_{f(x)}^+,\quad f^{-1}(\mathcal V_x^-)\subseteq\mathcal W_{f(x)}^-.\]
+  \end{enumerate}
+\end{defn}
+
+\begin{lem}[Putnam, Theorem 2.2.2]
+  Pour tout entourage $\mathcal U$ assez petit, et pour tout entier $N$, il existe un entourage $\mathcal U_N$ avec $\forall(x,y)\in\mathcal U_N,\forall i\in\{0,\dots,N\}:f^i([x,y])=[f^i(x),f^i(y)]\in\mathcal U$.
+\end{lem}
+
+\subsection{Exemple 1}
+on prend un ensemble $A$, qu'on voit comme espace topologique discret, et on consid\`ere $X_0=A^{\mathbb Z}$ avec la topologie produit, et les entourages engendr\'es par les $\mathcal U_{n,m}=\{(x,y)\in X_0^2:x_t=y_t\forall t\in[m,n]\}$ avec $m,n\in\mathbb Z$. L'application $f$ est le d\'ecalage. Finalement on se donne un graphe dirig\'e $G\subseteq A^2$, et on regarde $X=\{x\in X_0:(x_n,x_{n+1}\in G\forall n\}$.
+
+Alors $[x,y]=(\dots,y_{-1},y_0,x_1,x_2,\dots)$ pour $(x,y)\in\mathcal U_{0,0}$, et $f^{\pm1}$ contracte $\mathcal U_{0,0}$ en $\mathcal U_{-1,1}$ respectivement sur $(\mathcal U_{0,0})_x^{\pm1}$.
+
+\subsection{Tra\c{c}age}
+
+\begin{thm}[Ombach, Theorem]
+  Soit $X$ uniforme, $f\colon X\to X$ un hom\'eomorphisme uniforme. TFAE:
+  \begin{enumerate}
+  \item $f$ a des coordonn\'ees canoniques et est expansif;
+  \item $f$ a des coordonn\'ees hyperboliques wrt une m\'etrique [probablement seulement si $X$ est m\'etrisable];
+  \item $f$ trace les pseudo-orbites et est $\lambda$-expansif wrt une m\'etrique [probablement seulement si $X$ est m\'etrisable compact];
+  \item $f$ trace les pseudo-orbites et est expansif;
+  \item $f$ a des coordonn\'ees r\'eguli\`eres;
+  \item $f$ est un espace de Smale.
+  \end{enumerate}
+\end{thm}
+
+\begin{defn}
+  \[W^u=\{(x,y)\in X^2:f^n(x,y)\to\Delta\text{ quand }n\to-\infty\}.\]
+  \[W^s=\{(x,y)\in X^2:f^n(x,y)\to\Delta\text{ quand }n\to+\infty\}.\]
+  Pour un entourage $\mathcal U$,
+  \[W_{\mathcal U}^u=\bigcap_{n\le0}f^n(\mathcal U),\quad
+    W_{\mathcal U}^s=\bigcap_{n\ge0}f^n(\mathcal U).\]
+
+  Si $U\subseteq X^2$ est une relation, on note $U(x)=\{y: (y,x)\in U\}$, etc.
+
+  $f$ a des \emph{coordonn\'ees canoniques} si
+  \[\forall\mathcal U\text{ assez petit}:\exists\mathcal V:(x,y)\in\mathcal V\Rightarrow W_{\mathcal V}^s(x)\cap W_{\mathcal V}^u(y)\ne\emptyset.\]
+
+  $f$ a des \emph{coordonn\'ees r\'eguli\`eres} si
+  \[\forall\mathcal U\text{ assez petit}:\exists\mathcal V:\exists[,]\colon\mathcal V\to X\text{ continue}:(x,y)\in\mathcal V\Rightarrow W_{\mathcal V}^s(x)\cap W_{\mathcal V}^u(y)=\{[x,y]\},\]
+  et $W_{\mathcal U}^s\subset W^s,W_{\mathcal U}^u\subset W^u$.
+
+  $f$ a des \emph{coordonn\'ees hyperboliques} s'il existe un entourage $\mathcal U$, $\lambda\in(0,1)$, $C\ge0$ tq
+  \[W_{\mathcal U}^s\subset\{(x,y):d(f^n x,f^n y)\le C\lambda^n d(x,y)\forall n\ge0\},\]
+  \[W_{\mathcal U}^u\subset\{(x,y):d(f^n x,f^n y)\le C\lambda^n d(x,y)\forall n\le0\}.\]
+
+  $f$ est \emph{expansive} s'il existe un entourage $\mathcal U$ tel que $\bigcap_{n\in\mathbb Z}f^n(\mathcal U)=\Delta$.
+
+  $f$ est \emph{$\lambda$-expansive} avec $\lambda\in(0,1)$ s'il existe $C>0,e>0$ tels que
+  \[\forall n\in\mathbb N: (d(f^k x,f^k y)\le e\forall |k|\le n)\Rightarrow d(x,y)\le C\lambda^n d(x,y).\]
+
+  $f$ \emph{trace les pseudo-orbites} si pour tout entourage $\mathcal U$ il existe un entourage $\mathcal V$ tel que toute $\mathcal V$-pseudo-orbite est $\mathcal U$-trac\'ee par une orbite; i.e. si $(x_n)_{n\in\mathbb Z}$ satisfait $\forall n:(x_n,x_{n+1})\in\mathcal V$, alors il existe $x$ avec $\forall n:(f^n(x),x_n)\in\mathcal U$.
+\end{defn}
+\begin{proof}
+
+  [Bowen, Proposition 3.6 et Corollary 3.7]
+
+  [Ombach]
+\end{proof}
+
+\subsection{D\'ecomposition spectrale}
+
+[Bowen, Theorem 3.5]
+
+\subsection{Partitions de Markov}
+
+[Bowen, Theorem 3.12]
+
+\subsection{R\'ef\'erences}
+
+I. Putnam, Lecture Notes on Smale Spaces, 2015.
+
+R. Bowen. Equilibrium States and the Ergodic Theory of Anosov diffeomorphisms. Lecture Notes in Math. No. 470. Springer, Berlin, 1975.
+
+J. Ombach, Equivalent conditions for hyperbolic coordinates, Topology Appl. 23 (1986) 87-90.
+
+\end{document}

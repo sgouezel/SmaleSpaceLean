@@ -1,0 +1,161 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% macros for LB's articles
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% options processed:
+% color                 for the macros \red,\blue
+% francais              defines thm names in french (numbered by chapter)
+% margindefs            \emdef adds a marginal note
+% index                 prints an index at the end
+% hams                  uses the hamsalpha bibliography style
+% amsrefs               do not use the amsrefs package
+
+\NeedsTeXFormat{LaTeX2e}[1999/06/01]
+\ProvidesPackage{math}[2004/09/01 v2.0b math macros for LB]
+\DeclareOption{francais}{\math@francaistrue}
+\DeclareOption{english}{\math@francaisfalse}
+\DeclareOption{color}{\math@colortrue}
+\DeclareOption{margindefs}{\math@margindefstrue}
+\DeclareOption{index}{\math@indextrue}
+\DeclareOption{xnumber}{\let\@numbering=\relax}
+\DeclareOption{xxnumber}{\def\@numbering{section}}
+\DeclareOption{xxxnumber}{\def\@numbering{chapter}}
+\DeclareOption{amsrefs}{\math@amsrefstrue}
+\DeclareOption{hams}{\math@hamstrue}
+\newif\ifmath@francais\math@francaisfalse
+\newif\ifmath@color\math@colorfalse
+\newif\ifmath@margindefs\math@margindefsfalse
+\newif\ifmath@index\math@indexfalse
+\newif\ifmath@hams\math@hamsfalse
+\newif\ifmath@amsrefs\math@amsrefsfalse
+\def\@numbering{section}
+\ProcessOptions
+
+% useful packages
+\RequirePackage{amssymb,latexsym,ifthen,color}
+\ifmath@amsrefs\RequirePackage[lite]{amsrefs}\fi
+% extra commands
+\AtEndDocument{\ifmath@hams\bibliographystyle{hamsalpha}\fi
+  \ifmath@amsrefs\begin{bibsection}\begin{biblist}\bibselect{math}%
+    \end{biblist}\end{bibsection}\fi
+  \ifmath@index\printindex\fi}
+\AtBeginDocument{\ifmath@index\makeindex\fi}
+\def\nop#1{}
+\def\cprime{$'$}
+\font\cyreight=wncyr8
+
+% rings
+
+%\expandafter\ifx\csname XeTeXrevision\endcsname\relax
+%  \xetexfalse
+%\else
+%  \xetextrue
+%\fi
+\newcommand\C{{\mathbb C}}
+\newcommand\R{{\mathbb R}}
+\newcommand\Z{{\mathbb Z}} 
+\newcommand\N{{\mathbb N}}
+\newcommand\Q{{\mathbb Q}}
+\newcommand\F[1][p]{{\mathbb F_{#1}}}
+
+% groups
+\newcommand\aut{\operatorname{\mathsf{Aut}}}
+\newcommand\norm{\operatorname{\mathsf{Norm}}}
+\newcommand\centr{\operatorname{\mathsf{Centr}}}
+\newcommand\comm{\operatorname{comm}}
+\newcommand\End{\operatorname{End}}
+\newcommand\free[1]{{\mathbb F_{#1}}}
+\newcommand\Ker{\operatorname{Ker}}
+\newcommand\sym[1]{{\mathfrak S}_{#1}}
+\newcommand\Gg{{\mathfrak G}}
+\newcommand\GS{{\ddot\Gamma}}
+\newcommand\BG{{\dot\Gamma}}
+\newcommand\FG{\Gamma}
+
+% trees
+\newcommand\rist{\operatorname{\mathsf{Rist}}}
+\newcommand\stab{\operatorname{\mathsf{Stab}}}
+\newcommand\tree{{\mathcal T}}
+
+% misc
+\newcommand\Hecke{{\mathcal L}}
+\newcommand\hilb{{\mathcal H}}
+\newcommand\uhilb{\mathcal U(\hilb)}
+\newcommand\bded{{\mathcal B}}
+\newcommand\Lie{{\mathcal L}}
+\newcommand\ad{{\operatorname{\mathsf{ad}}}}
+\newcommand\Ad{{\operatorname{\mathsf{Ad}}}}
+\newcommand\gf{{\mathfrak G}}
+\newcommand\doverline[1]{\overline{\overline{#1}}}
+\newcommand\im{\operatorname{Im}}
+\newcommand\dist{\operatorname{dist}}
+\newcommand\rank{\operatorname{rank}}
+\newcommand\tr{\operatorname{tr}}
+\newcommand\spec{\operatorname{spec}}
+\newcommand\sch{{\mathcal S}}
+\newcommand\msmash[1]{\raisebox{-1ex}{\makebox(0,0)[b]{\smash{$#1$}}}}
+\newcommand\setsuch[2]{{\left\{#1\left|\,#2\right\}\right.}}
+\ifmath@color
+  \newcommand\red[1]{\textcolor{red}{#1}}
+  \newcommand\blue[1]{\textcolor{blue}{#1}}
+\else
+  \newcommand\red[1]{{#1}}
+  \newcommand\blue[1]{{#1}}
+\fi
+
+% definitions
+\ifmath@margindefs
+  \newcommand\emdef[1]{\emph{#1}\marginpar{\scriptsize\ifodd\thepage\else\hfill\fi#1}}
+\else
+  \newcommand\emdef[1]{\emph{#1}}
+\fi
+
+% environments
+\ifmath@francais
+  \catcode`«=\active\newcommand«{<<}
+  \catcode`»=\active\newcommand»{>>}
+  \RequirePackage{t1enc}
+
+  \ifx\@numbering\relax
+  \newtheorem{thm}{Théorème}
+  \else
+  \newtheorem{thm}{Théorème}[\@numbering]
+  \fi
+  \newtheorem{conj}[thm]{Conjecture}
+  \newtheorem{cor}[thm]{Corollaire}
+  \newtheorem{lem}[thm]{Lemme}
+  \newtheorem{problem}[thm]{Problème}
+  \newtheorem{prop}[thm]{Proposition}
+  \newtheorem{question}[thm]{Question}
+  \newtheorem{scholium}[thm]{Scholium}
+  \theoremstyle{definition}
+  \newtheorem{plaindefn}[thm]{Définition}
+  \newtheorem{rem}[thm]{Remarque}
+\else
+  \ifx\@numbering\relax
+  \newtheorem{thm}{Theorem}
+  \newtheorem{lem}{Lemma}
+  \newtheorem{problem}{Problem}
+  \theoremstyle{definition}
+  \newtheorem{defn}{Definition}
+  \newtheorem{rem}{Remark}
+  \newtheorem{exple}{Example}
+  \newtheorem{exse}{Exercise}
+  \else
+  \newtheorem{thm}{Theorem}[\@numbering]
+  \newtheorem{lem}[thm]{Lemma}
+  \newtheorem{problem}[thm]{Problem}
+  \theoremstyle{definition}
+  \newtheorem{plaindefn}[thm]{Definition}
+  \newtheorem{rem}[thm]{Remark}
+  \newtheorem{exple}[thm]{Example}
+  \newtheorem{exse}[thm]{Exercise}
+  \fi
+  \theoremstyle{plain}
+  \newtheorem{conj}[thm]{Conjecture}
+  \newtheorem{cor}[thm]{Corollary}
+  \newtheorem{prop}[thm]{Proposition}
+  \newtheorem{scholium}[thm]{Scholium}
+  \newtheorem{question}[thm]{Question}
+\fi
+\newenvironment{defn}{\let\defnoldqedsymbol=\qedsymbol\def\qedsymbol{$\triangle$}\pushQED{\qed}\begin{plaindefn}}{\popQED\let\qedsymbol=\defnoldqedsymbol\end{plaindefn}}
