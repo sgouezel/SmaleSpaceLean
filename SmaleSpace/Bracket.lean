@@ -25,11 +25,11 @@ and the horizontal line through `q`.
 -/
 
 open scoped Uniformity Topology
-open Function Set Filter
+open Function Set Filter Metric
 
 namespace SmaleSpace
 
-variable (X : Type*) [UniformSpace X] {U V : Set (X × X)} {a b c o s u x y z : X}
+variable (X : Type*) [MetricSpace X] {U V : Set (X × X)} {a b c o s u x y z : X} {ε : ℝ}
 
 /-! ### Spaces with a Ruelle bracket -/
 
@@ -41,36 +41,39 @@ For the formalization, we require the bracket to be defined everywhere although 
 it close to the diagonal, to avoid dependent type issues. We record its algebraic properties,
 together with uniform continuity.
 
-We include in the definition the data of an entourage where the bracket is well-defined. We could
-require only its existence, but including it as data makes it possible to be more explicit in
-concrete situations. For instance, in subshifts of finite type, we can take for `mainEnt` the
-set of pairs of points sharing the same symbol at coordinate `0`.
+We include in the definition the data of a size `δ₀` below which the bracket is well defined.
+We could require only its existence, but including it as data makes it possible to be more explicit
+in concrete situations. For instance, in subshifts of finite type, we can take `δ₀ = 1`, meaning
+that the bracket is well defined on pairs of points sharing the same symbol at coordinate `0`.
 -/
 class HasRuelleBracket where
   /-- the bracket itself, denoted `⁅x, y⁆` once the theory is set up -/
   toFun : X → X → X
-  /-- An entourage on which the bracket is uniformly continuous and involutive -/
-  mainEnt : Set (X × X)
-  mainEnt_mem : mainEnt ∈ 𝓤 X
-  mainEnt_symm {x y : X} (h : (x, y) ∈ mainEnt) : (y, x) ∈ mainEnt
-  unifCont : UniformContinuousOn (uncurry toFun) mainEnt
+  /-- the bracket is only well behaved below some size `δ₀ > 0` -/
+  deltaZero : ℝ
+  deltaZero_pos : 0 < deltaZero
+  unifCont : UniformContinuousOn (uncurry toFun) {p | dist p.1 p.2 < deltaZero}
   refl x : toFun x x = x
-  bracket_left' : ∀ x y z, (x, y) ∈ mainEnt → (y, z) ∈ mainEnt →
+  bracket_left' : ∀ x y z, dist x y < deltaZero → dist y z < deltaZero →
     toFun (toFun x y) z = toFun x z
-  bracket_right' : ∀ x y z, (x, y) ∈ mainEnt → (y, z) ∈ mainEnt →
+  bracket_right' : ∀ x y z, dist x y < deltaZero → dist y z < deltaZero →
     toFun x (toFun y z) = toFun x z
 
 instance [h : HasRuelleBracket X] : Bracket X X where
   bracket := h.toFun
 
-export HasRuelleBracket (mainEnt mainEnt_mem mainEnt_symm)
+export HasRuelleBracket (deltaZero_pos)
+
+local notation3 "δ₀" => HasRuelleBracket.deltaZero X
 
 variable [HasRuelleBracket X]
 
-lemma uniformContinuousOn_bracket : UniformContinuousOn (fun (p : X × X) ↦ ⁅p.1, p.2⁆) mainEnt :=
+lemma uniformContinuousOn_bracket :
+    UniformContinuousOn (fun (p : X × X) ↦ ⁅p.1, p.2⁆) {p : X × X | dist p.1 p.2 < δ₀} :=
   HasRuelleBracket.unifCont
 
-lemma continuousOn_bracket : ContinuousOn (fun (p : X × X) ↦ ⁅p.1, p.2⁆) mainEnt :=
+lemma continuousOn_bracket :
+    ContinuousOn (fun (p : X × X) ↦ ⁅p.1, p.2⁆) {p : X × X | dist p.1 p.2 < δ₀} :=
   (uniformContinuousOn_bracket X).continuousOn
 
 variable {X}
@@ -78,14 +81,11 @@ variable {X}
 @[simp] lemma bracket_self (x : X) : ⁅x, x⁆ = x :=
   HasRuelleBracket.refl x
 
-@[simp] lemma prodMk_self_mem_mainEnt (x : X) : (x, x) ∈ mainEnt :=
-  mem_uniformity_of_eq mainEnt_mem rfl
-
-lemma bracket_left (h : (x, y) ∈ mainEnt) (h' : (y, z) ∈ mainEnt) :
+lemma bracket_left (h : dist x y < δ₀) (h' : dist y z < δ₀) :
     ⁅⁅x, y⁆, z⁆ = ⁅x, z⁆ :=
   HasRuelleBracket.bracket_left' x y z h h'
 
-lemma bracket_right (h : (x, y) ∈ mainEnt) (h' : (y, z) ∈ mainEnt) :
+lemma bracket_right (h : dist x y < δ₀) (h' : dist y z < δ₀) :
     ⁅x, ⁅y, z⁆⁆ = ⁅x, z⁆ :=
   HasRuelleBracket.bracket_right' x y z h h'
 
@@ -94,14 +94,15 @@ lemma tendsto_bracket_fst : Tendsto (fun (p : X × X) ↦ (p.1, ⁅p.1, p.2⁆))
   intro V hV
   rcases uniformContinuousOn_bracket X hV with ⟨t₁, h₁, t₂, h₂, hV'⟩
   rcases entourageProd_subset h₁ with ⟨u, hu, u', hu', huu'⟩
-  have : mainEnt ∩ u ∩ u' ∈ 𝓤 X := by grind [Filter.inter_mem, mainEnt_mem]
+  have : {p : X × X | dist p.1 p.2 < δ₀} ∈ 𝓤 X := Metric.dist_mem_uniformity deltaZero_pos
+  have : {p : X × X | dist p.1 p.2 < δ₀} ∩ u ∩ u' ∈ 𝓤 X := by grind [Filter.inter_mem]
   apply mem_of_superset this
   rintro ⟨a, b⟩ hab
   have M₁ : ((a, a), (a, b)) ∈ t₁ := huu' (by simp [entourageProd, mem_uniformity_of_eq hu, hab.2])
   have M₂ : ((a, a), (a, b)) ∈ t₂ := by
     simp only [mem_principal] at h₂
     apply h₂
-    simp [mem_uniformity_of_eq mainEnt_mem, hab.1.1]
+    simp [deltaZero_pos, hab.1.1]
   have : ((a, a), (a, b)) ∈ t₁ ∩ t₂ := ⟨M₁, M₂⟩
   simpa [← hV']
 
@@ -109,8 +110,9 @@ lemma tendsto_bracket_fst : Tendsto (fun (p : X × X) ↦ (p.1, ⁅p.1, p.2⁆))
 lemma tendsto_bracket_snd : Tendsto (fun (p : X × X) ↦ (p.2, ⁅p.1, p.2⁆)) (𝓤 X) (𝓤 X) :=
   tendsto_id.uniformity_symm.uniformity_trans tendsto_bracket_fst
 
-/-- If three points are close, then the first one is close to the bracket of the other ones. -/
-lemma exists_bracket_mem (hU : U ∈ 𝓤 X) :
+/-- If three points are close, then the first one is close to the bracket of the other ones.
+Version in terms of uniformities. -/
+lemma exists_bracket_mem_entourage (hU : U ∈ 𝓤 X) :
     ∃ V ∈ 𝓤 X, (∀ x y, (x, y) ∈ V → (y, x) ∈ V) ∧
       ∀ x y z, (y, x) ∈ V → (x, z) ∈ V → ((x, ⁅y, z⁆) ∈ U ∧ (⁅y, z⁆, x) ∈ U) := by
   rcases comp_symm_of_uniformity hU with ⟨U', U'_mem, U'_symm, hU'⟩
@@ -123,105 +125,85 @@ lemma exists_bracket_mem (hU : U ∈ 𝓤 X) :
   exact ⟨hU' (prodMk_mem_compRel (U'_symm hxy.1) this),
     hU' (prodMk_mem_compRel (U'_symm this) hxy.1)⟩
 
-/-!
-### Reducing entourages
-
-Given an entourage `U`, we construct a smaller entourage `bracketRoot U` such that composing points
-in `bracketRoot U` or taking their brackets, one remains in `U`.
--/
-
-open scoped Classical in
-/-- Given an entourage `U`, the entourage `bracketRoot U` is smaller, designed so that the Ruelle
-bracket of points inside it remain in `U`. Iterate this construction if you need stability
-of longer brackets. -/
-def bracketRoot (U : Set (X × X)) : Set (X × X) :=
-  if hU : U ∈ 𝓤 X then
-    (comp_symm_of_uniformity (exists_bracket_mem hU).choose_spec.1).choose
-  else ∅
-
-lemma bracketRoot_symm (h : (a, b) ∈ bracketRoot U) : (b, a) ∈ bracketRoot U := by
-  by_cases hU : U ∈ 𝓤 X; swap
-  · simp [bracketRoot, hU] at h
-  simp only [bracketRoot, hU, ↓reduceDIte] at h ⊢
-  exact (comp_symm_of_uniformity (exists_bracket_mem hU).choose_spec.1).choose_spec.2.1 h
-
-lemma bracketRoot_mem_unif (hU : U ∈ 𝓤 X) : bracketRoot U ∈ 𝓤 X := by
-  simp only [bracketRoot, hU, ↓reduceDIte]
-  exact (comp_symm_of_uniformity (exists_bracket_mem hU).choose_spec.1).choose_spec.1
-
-lemma bracket_right_mem_of_mem_bracketRoot
-    (h : (a, b) ∈ bracketRoot U) (h' : (b, c) ∈ bracketRoot U) : (b, ⁅a, c⁆) ∈ U := by
-  by_cases hU : U ∈ 𝓤 X; swap
-  · simp [bracketRoot, hU] at h
-  let U' := (exists_bracket_mem hU).choose
-  have I : bracketRoot U ⊆ U' := by
-    have : bracketRoot U ○ bracketRoot U ⊆ U' := by
-      simp only [bracketRoot, hU, ↓reduceDIte]
-      exact (comp_symm_of_uniformity (exists_bracket_mem hU).choose_spec.1).choose_spec.2.2
-    exact (subset_comp_self_of_mem_uniformity (bracketRoot_mem_unif hU)).trans this
-  exact ((exists_bracket_mem hU).choose_spec.2.2 _ _ _ (I h) (I h')).1
-
-lemma bracket_left_mem_of_mem_bracketRoot
-    (h : (a, b) ∈ bracketRoot U) (h' : (b, c) ∈ bracketRoot U) : (⁅a, c⁆, b) ∈ U := by
-  by_cases hU : U ∈ 𝓤 X; swap
-  · simp [bracketRoot, hU] at h
-  let U' := (exists_bracket_mem hU).choose
-  have I : bracketRoot U ⊆ U' := by
-    have : bracketRoot U ○ bracketRoot U ⊆ U' := by
-      simp only [bracketRoot, hU, ↓reduceDIte]
-      exact (comp_symm_of_uniformity (exists_bracket_mem hU).choose_spec.1).choose_spec.2.2
-    exact (subset_comp_self_of_mem_uniformity (bracketRoot_mem_unif hU)).trans this
-  exact ((exists_bracket_mem hU).choose_spec.2.2 _ _ _ (I h) (I h')).2
-
-lemma bracketRoot_subset_self : bracketRoot U ⊆ U := by
-  rintro ⟨a, b⟩ hab
-  simpa using bracket_right_mem_of_mem_bracketRoot (bracketRoot_symm hab) hab
-
-lemma comp_mem_of_mem_bracketRoot
-    (h : (a, b) ∈ bracketRoot U) (h' : (b, c) ∈ bracketRoot U) : (a, c) ∈ U := by
-  by_cases hU : U ∈ 𝓤 X; swap
-  · simp [bracketRoot, hU] at h
-  let U' := (exists_bracket_mem hU).choose
-  have hU'U : U' ⊆ U := by
-    rintro ⟨x, y⟩ hxy
-    have hyx : (y, x) ∈ U' := (exists_bracket_mem hU).choose_spec.2.1 _ _ hxy
-    simpa using ((exists_bracket_mem hU).choose_spec.2.2 _ _ _ hyx hxy).1
-  simp only [bracketRoot, hU, ↓reduceDIte] at h h'
-  have := (comp_symm_of_uniformity (exists_bracket_mem hU).choose_spec.1).choose_spec.2.2
-  apply this.trans hU'U (prodMk_mem_compRel h h')
+variable (X) in
+/-- If three points are close, then the first one is clsoe to the bracket of the other ones.
+Version in terms of distances. -/
+lemma exists_dist_bracket_lt (hε : 0 < ε) :
+    ∃ ε' ∈ Ioc 0 ((min ε δ₀) / 2), ∀ x y z,
+      dist x y < ε' → dist x z < ε' → dist (x : X) ⁅y, z⁆ < ε := by
+  have := deltaZero_pos (X := X)
+  have : {p : X × X | dist p.1 p.2 < ε} ∈ 𝓤 X := Metric.dist_mem_uniformity hε
+  rcases exists_bracket_mem_entourage this with ⟨V, hV, -, h'V⟩
+  rcases Metric.mem_uniformity_dist.1 hV with ⟨ε', ε'_pos, hε'⟩
+  refine ⟨min ε' ((min ε δ₀) / 2), ⟨by positivity, min_le_right _ _⟩ , fun x y z hxy hxz ↦ ?_⟩
+  refine (h'V _ _ _ (hε' ?_) (hε' (by grind))).1
+  rw [dist_comm]
+  grind
 
 /-!
-### Small enough entourages
+### Reducing scales
 
-Stable and unstable manifolds are only local objects. We parametrize them using an entourage `U`.
-These constructions only work well if `U` is small enough. We record in this section smallness
-conditions that are suitable for the task. They are explicit enough that, in the case of subshifts
-of finite type, pairs of points with matching zeroth coordinate form a small enough entourage --
-which is important since in this specific example we really want to have explicit and rather large
-local stable and unstable manifolds.
+Given a small scale `ε`, we define a smaller scale `reduceScale X ε` so that points within the
+smaller scale have brackets within distance `ε`. We specialize this to `δ₁ := reduceScale X δ₀`.
 -/
 
-/-- An entourage is *small enough* it it is contained in the main entourage where the bracket is
-well behaved, and the bracket of points also remains in the main entourage. -/
-structure SmallEnough (U : Set (X × X)) : Prop where
-  subset_mainEnt : U ⊆ mainEnt
-  comp_subset_mainEnt : U ○ U ⊆ mainEnt
-  bracket_mem {x y z : X} (h : (y, x) ∈ U) (h' : (x, z) ∈ U) : (x, ⁅y, z⁆) ∈ mainEnt
+variable (X) in
+/-- The scale `reduceScale X ε` is small enough compared to `ε` so that points within the
+smaller scale have brackets within distance `ε`.-/
+noncomputable def reduceScale (ε : ℝ) : ℝ :=
+  if hε : 0 < ε then (exists_dist_bracket_lt X hε).choose
+  else ε
 
-lemma SmallEnough.mono (hU : SmallEnough U) (h : V ⊆ U) : SmallEnough V where
-  subset_mainEnt := h.trans hU.subset_mainEnt
-  comp_subset_mainEnt := (compRel_mono h h).trans hU.comp_subset_mainEnt
-  bracket_mem hyx hxz := hU.bracket_mem (h hyx) (h hxz)
+lemma reduceScale_pos (hε : 0 < ε) : 0 < reduceScale X ε := by
+  simp only [reduceScale, hε, ↓reduceDIte]
+  exact (exists_dist_bracket_lt X hε).choose_spec.1.1
 
-/-- Every set contained in a small entourage is small enough. -/
-lemma eventually_smallEnough : ∀ᶠ U in (𝓤 X).smallSets, SmallEnough U := by
-  rw [eventually_smallSets]
-  rcases comp_symm_of_uniformity (mainEnt_mem (X := X)) with ⟨U, U_mem, U_symm, hU⟩
-  rcases exists_bracket_mem mainEnt_mem (X := X) with ⟨V, V_mem, V_symm, hV⟩
-  refine ⟨U ∩ V, inter_mem U_mem V_mem, fun t ht ↦ ⟨by grind [subset_comp_self_of_mem_uniformity],
-    ?_, by grind⟩⟩
-  have : t ⊆ U := by grind
-  exact (compRel_mono this this).trans hU
+lemma reduceScale_le_half_self : reduceScale X ε ≤ ε / 2 := by
+  by_cases hε : 0 < ε
+  · simp only [reduceScale, hε, ↓reduceDIte]
+    apply (exists_dist_bracket_lt X hε).choose_spec.1.2.trans
+    gcongr
+    exact min_le_left _ _
+  · simp only [reduceScale, hε, ↓reduceDIte]
+    linarith
+
+lemma reduceScale_le_half_deltaZero : reduceScale X ε ≤ δ₀ / 2 := by
+  by_cases hε : 0 < ε
+  · simp only [reduceScale, hε, ↓reduceDIte]
+    apply (exists_dist_bracket_lt X hε).choose_spec.1.2.trans
+    gcongr
+    exact min_le_right _ _
+  · simp only [reduceScale, hε, ↓reduceDIte]
+    linarith [deltaZero_pos (X := X)]
+
+lemma reduceScale_le_deltaZero : reduceScale X ε ≤ δ₀ := by
+  linarith [reduceScale_le_half_deltaZero (X := X) (ε := ε), deltaZero_pos (X := X)]
+
+lemma dist_bracket_lt_of_lt_reduceScale {x y z : X}
+    (hxy : dist x y < reduceScale X ε) (hxz : dist x z < reduceScale X ε) :
+    dist x ⁅y, z⁆ < ε := by
+  by_cases hε : 0 < ε
+  · simp only [reduceScale, hε, ↓reduceDIte] at hxy hxz
+    exact (exists_dist_bracket_lt X hε).choose_spec.2 x y z hxy hxz
+  · simp [reduceScale, hε] at hxy
+    linarith [dist_nonneg (x := x) (y := y)]
+
+variable (X) in
+/-- A fixed size, sufficiently smaller than `δ₀` to ensure that brackets of points within `δ₁`
+remain within `δ₀`. -/
+noncomputable def deltaOne : ℝ := reduceScale X δ₀
+
+local notation3 "δ₁" => deltaOne X
+
+lemma deltaOne_pos : 0 < δ₁ := reduceScale_pos deltaZero_pos
+
+lemma deltaOne_le_half_deltaZero : δ₁ ≤ δ₀ / 2 := reduceScale_le_half_deltaZero
+
+lemma deltaOne_le_deltaZero : δ₁ ≤ δ₀ := by
+  linarith [deltaOne_le_half_deltaZero (X := X), deltaZero_pos (X := X)]
+
+lemma dist_bracket_lt_deltaZero {x y z : X} (hxy : dist x y < δ₁) (hxz : dist x z < δ₁) :
+    dist x ⁅y, z⁆ < δ₀ := dist_bracket_lt_of_lt_reduceScale hxy hxz
 
 /-!
 ### Local stable and unstable manifolds, local parametrization with product coordinates
@@ -230,135 +212,135 @@ lemma eventually_smallEnough : ∀ᶠ U in (𝓤 X).smallSets, SmallEnough U := 
 /-- The local stable manifold of `o` inside an entourage `U`, defined as the set of points `s` which
 are `U`-close to `o` and satisfy `⁅s, o⁆ = s`.
 Equivalently, these are the points with `⁅o, s⁆ = o`, see `locStable_eq`. -/
-def locStable (U : Set (X × X)) (o : X) : Set X := {s | (s, o) ∈ U ∧ ⁅s, o⁆ = s}
+def locStable (ε : ℝ) (o : X) : Set X := {s | dist o s < ε ∧ ⁅s, o⁆ = s}
 
 /-- The local unstable manifold of `o` inside an entourage `U`, defined as the set of points `u`
 which are `U`-close to `o` and satisfy `⁅o, u⁆ = u`.
 Equivalently, these are the points with `⁅u, o⁆ = o`, see `locUnstable_eq`. -/
-def locUnstable (U : Set (X × X)) (o : X) : Set X := {u | (o, u) ∈ U ∧ ⁅o, u⁆ = u}
+def locUnstable (ε : ℝ) (o : X) : Set X := {u | dist o u < ε ∧ ⁅o, u⁆ = u}
 
-lemma mem_of_mem_locStable (hs : s ∈ locStable U o) : (s, o) ∈ U := hs.1
+lemma mem_of_mem_locStable (hs : s ∈ locStable ε o) : dist o s < ε := hs.1
 
-lemma bracket_eq_of_mem_locStable (hs : s ∈ locStable U o) : ⁅s, o⁆ = s := hs.2
+lemma bracket_eq_of_mem_locStable (hs : s ∈ locStable ε o) : ⁅s, o⁆ = s := hs.2
 
-lemma locStable_eq (hU : SmallEnough U) : locStable U o = {s | (s, o) ∈ U ∧ ⁅o, s⁆ = o} := by
+lemma locStable_eq (hε : ε ≤ δ₀) : locStable ε o = {s | dist o s < ε ∧ ⁅o, s⁆ = o} := by
   ext s
+  have : dist o s = dist s o := PseudoMetricSpace.dist_comm o s
   simp only [locStable, mem_setOf_eq, and_congr_right_iff]
   intro h
   refine ⟨fun h' ↦ ?_, fun h' ↦ ?_⟩
-  · rw [← h', bracket_right, bracket_self]
-    · exact mainEnt_symm (hU.subset_mainEnt h)
-    · exact hU.subset_mainEnt h
-  · rw [← h', bracket_right, bracket_self]
-    · exact hU.subset_mainEnt h
-    · exact mainEnt_symm (hU.subset_mainEnt h)
+  · rw [← h', bracket_right, bracket_self] <;> linarith
+  · rw [← h', bracket_right, bracket_self] <;> linarith
 
-lemma mem_of_mem_locUnstable (hu : u ∈ locUnstable U o) : (o, u) ∈ U := hu.1
+lemma mem_of_mem_locUnstable (hu : u ∈ locUnstable ε o) : dist o u < ε := hu.1
 
-lemma bracket_eq_of_mem_locUnstable (hu : u ∈ locUnstable U o) : ⁅o, u⁆ = u := hu.2
+lemma bracket_eq_of_mem_locUnstable (hu : u ∈ locUnstable ε o) : ⁅o, u⁆ = u := hu.2
 
-lemma locUnstable_eq (hU : SmallEnough U) : locUnstable U o = {u | (o, u) ∈ U ∧ ⁅u, o⁆ = o} := by
+lemma locUnstable_eq (hε : ε ≤ δ₀) : locUnstable ε o = {u | dist o u < ε ∧ ⁅u, o⁆ = o} := by
   ext u
+  have : dist o u = dist u o := PseudoMetricSpace.dist_comm o u
   simp only [locUnstable, mem_setOf_eq, and_congr_right_iff]
   intro h
   refine ⟨fun h' ↦ ?_, fun h' ↦ ?_⟩
-  · rw [← h', bracket_left, bracket_self]
-    · exact hU.subset_mainEnt h
-    · exact mainEnt_symm (hU.subset_mainEnt h)
-  · rw [← h', bracket_left, bracket_self]
-    · exact mainEnt_symm (hU.subset_mainEnt h)
-    · exact hU.subset_mainEnt h
+  · rw [← h', bracket_left, bracket_self] <;> linarith
+  · rw [← h', bracket_left, bracket_self] <;> linarith
 
-/-- If an entourage is small enough, then one can parametrize a neighborhood of any point `o` by
-taking the bracket of points on its stable and unstable manifolds.
+/-- For small enough `ε`, one can parametrize a neighborhood of any point `o` by
+taking the bracket of points on its stable and unstable manifolds of size `ε`.
 
-The fact that the target of this parametrization is indeed a neighborhood of `o` (of fixed size)
-is given in `SmallEnough.bracketRoot_subset_target_localProduct`.
+The fact that the target of this parametrization is indeed a neighborhood of `o` (of
+fixed size `reduceScale X ε`) is given in `ball_reduceScale_subset_target_localProduct`.
 -/
 @[simps!]
-def SmallEnough.localProductEquiv (hU : SmallEnough U) (o : X) : PartialEquiv (X × X) X where
+def localProductEquiv (hε : ε ≤ δ₁) (o : X) : PartialEquiv (X × X) X where
   toFun p := ⁅p.1, p.2⁆
   invFun z := (⁅z, o⁆, ⁅o, z⁆)
-  source := (locStable U o) ×ˢ (locUnstable U o)
-  target := {y | (o, y) ∈ mainEnt ∧ (o, ⁅o, y⁆) ∈ U ∧ (⁅y, o⁆, o) ∈ U}
+  source := (locStable ε o) ×ˢ (locUnstable ε o)
+  target := {y | dist o y < δ₀ ∧ dist o ⁅o, y⁆ < ε ∧ dist o ⁅y, o⁆ < ε}
   map_source' := by
     rintro ⟨s, u⟩ ⟨hs, hu⟩
-    have h's : (s, o) ∈ U := mem_of_mem_locStable hs
-    have h'u : (o, u) ∈ U := mem_of_mem_locUnstable hu
+    have h's : dist o s < ε := mem_of_mem_locStable hs
+    have h'u : dist o u < ε := mem_of_mem_locUnstable hu
+    have : dist s u < δ₀ := by
+      linarith [dist_triangle_left s u o, deltaOne_le_half_deltaZero (X := X)]
+    have := deltaOne_le_deltaZero (X := X)
     simp only [mem_setOf_eq]
     refine ⟨?_, ?_, ?_⟩
-    · apply hU.bracket_mem h's h'u
-    · rwa [bracket_right, bracket_eq_of_mem_locUnstable hu]
-      · apply mainEnt_symm
-        exact hU.subset_mainEnt h's
-      · exact hU.comp_subset_mainEnt (prodMk_mem_compRel h's h'u)
+    · exact dist_bracket_lt_deltaZero (by linarith) (by linarith)
+    · rwa [bracket_right, bracket_eq_of_mem_locUnstable hu] <;> linarith
     · rwa [bracket_left, bracket_eq_of_mem_locStable hs]
-      · exact hU.comp_subset_mainEnt (prodMk_mem_compRel h's h'u)
-      · apply mainEnt_symm
-        exact hU.subset_mainEnt h'u
+      · linarith
+      · rw [dist_comm]
+        linarith
   map_target' := by
     rintro x ⟨hx_main, hx, h'x⟩
-    simp [locStable, locUnstable, bracket_left, bracket_right, hx_main, mainEnt_symm hx_main,
-      hx, h'x]
+    simp only [locStable, locUnstable, mem_prod, mem_setOf_eq, h'x, true_and, hx]
+    rw [bracket_left, bracket_right] <;> simp [deltaZero_pos, dist_comm, hx_main]
   left_inv' := by
     rintro ⟨s, u⟩ ⟨hs, hu⟩
-    have h's : (s, o) ∈ U := mem_of_mem_locStable hs
-    have h'u : (o, u) ∈ U := mem_of_mem_locUnstable hu
+    have h's : dist o s < ε := mem_of_mem_locStable hs
+    have h'u : dist o u < ε := mem_of_mem_locUnstable hu
+    have : dist s u < δ₀ := by
+      linarith [dist_triangle_left s u o, deltaOne_le_half_deltaZero (X := X)]
+    have := deltaOne_le_deltaZero (X := X)
     simp only [Prod.mk.injEq]
     constructor
     · rw [bracket_left]
       · exact bracket_eq_of_mem_locStable hs
-      · apply hU.comp_subset_mainEnt (prodMk_mem_compRel h's h'u)
-      · apply mainEnt_symm
-        apply hU.subset_mainEnt h'u
+      · linarith
+      · rw [dist_comm]
+        linarith
     · rw [bracket_right]
       · exact bracket_eq_of_mem_locUnstable hu
-      · apply mainEnt_symm
-        apply hU.subset_mainEnt h's
-      · apply hU.comp_subset_mainEnt (prodMk_mem_compRel h's h'u)
+      · linarith
+      · linarith
   right_inv' := by
     intro x ⟨hx, h'x, h''x⟩
     simp only
     rw [bracket_left, bracket_right, bracket_self]
-    · exact mainEnt_symm hx
+    · rwa [dist_comm]
     · exact hx
-    · exact mainEnt_symm hx
-    · exact hU.subset_mainEnt h'x
+    · rwa [dist_comm]
+    · linarith [deltaOne_le_deltaZero (X := X)]
 
-lemma SmallEnough.continuousOn_localProductEquiv (hU : SmallEnough U) :
-    ContinuousOn (hU.localProductEquiv o) (hU.localProductEquiv o).source := by
+lemma continuousOn_localProductEquiv (hε : ε ≤ δ₁) :
+    ContinuousOn (localProductEquiv hε o) (localProductEquiv hε o).source := by
   apply (continuousOn_bracket X).mono
   rintro ⟨s, u⟩ ⟨⟨hs, h's⟩, ⟨hu, h'u⟩⟩
-  exact hU.comp_subset_mainEnt (prodMk_mem_compRel hs hu)
+  simp only [mem_setOf_eq] at hs hu ⊢
+  linarith [dist_triangle_left s u o, deltaOne_le_half_deltaZero (X := X)]
 
-lemma SmallEnough.continuousOn_symm_localProductEquiv (hU : SmallEnough U) :
-    ContinuousOn (hU.localProductEquiv o).symm (hU.localProductEquiv o).target := by
-  change ContinuousOn (fun z ↦ (⁅z, o⁆, ⁅o, z⁆))
-    {y | (o, y) ∈ mainEnt ∧ (o, ⁅o, y⁆) ∈ U ∧ (⁅y, o⁆, o) ∈ U}
+lemma continuousOn_symm_localProductEquiv (hε : ε ≤ δ₁) :
+    ContinuousOn (localProductEquiv hε o).symm (localProductEquiv hε o).target := by
   apply ContinuousOn.prodMk
   · apply (continuousOn_bracket X).comp (Continuous.prodMk_left o).continuousOn
     intro x ⟨hxo, hx, h'x⟩
-    exact mainEnt_symm hxo
+    simpa [dist_comm] using hxo
   · apply (continuousOn_bracket X).comp (Continuous.prodMk_right o).continuousOn
     intro x ⟨hxo, hx, h'x⟩
     exact hxo
 
 /-- Given a small enough entourage `U`, the ball around `o` for the smaller
 entourage `bracketRoot U` is covered by the local product parametrization coming from `U`.-/
-lemma SmallEnough.bracketRoot_subset_target_localProductEquiv (hU : SmallEnough U) :
-    UniformSpace.ball o (bracketRoot U) ⊆ (hU.localProductEquiv o).target := by
-  by_cases h'U : U ∈ 𝓤 X; swap
-  · simp [bracketRoot, h'U, UniformSpace.ball]
-  intro y (hy : (o, y) ∈ bracketRoot U)
+lemma ball_reduceScale_subset_target_localProductEquiv (hε : ε ≤ δ₁) :
+    ball o (reduceScale X ε) ⊆ (localProductEquiv hε o).target := by
+  by_cases hε : 0 < ε; swap
+  · simp only [reduceScale, hε, ↓reduceDIte, localProductEquiv_target]
+    rw [Metric.ball_eq_empty.2 (by linarith)]
+    simp
+  intro y (hy : dist y o < reduceScale X ε)
+  rw [dist_comm] at hy
   simp only [localProductEquiv_target, mem_setOf_eq]
-  have hoo : (o, o) ∈ bracketRoot U := mem_uniformity_of_eq (bracketRoot_mem_unif h'U) rfl
   refine ⟨?_, ?_, ?_⟩
-  · apply hU.subset_mainEnt
-    exact bracketRoot_subset_self hy
-  · exact bracket_right_mem_of_mem_bracketRoot hoo hy
-  · exact bracket_left_mem_of_mem_bracketRoot (bracketRoot_symm hy) hoo
+  · exact hy.trans_le reduceScale_le_deltaZero
+  · apply dist_bracket_lt_of_lt_reduceScale _ hy
+    simp [reduceScale_pos hε]
+  · apply dist_bracket_lt_of_lt_reduceScale hy
+    simp [reduceScale_pos hε]
 
-lemma SmallEnough.target_localProductEquiv_mem_nhds (hU : SmallEnough U) (h : U ∈ 𝓤 X) :
-    (hU.localProductEquiv o).target ∈ 𝓝 o := by
-  apply Filter.mem_of_superset _ hU.bracketRoot_subset_target_localProductEquiv
-  exact UniformSpace.ball_mem_nhds o (bracketRoot_mem_unif h)
+lemma target_localProductEquiv_mem_nhds (hε : ε ≤ δ₁) (h'ε : 0 < ε) :
+    (localProductEquiv hε o).target ∈ 𝓝 o := by
+  apply mem_of_superset _ (ball_reduceScale_subset_target_localProductEquiv hε)
+  exact ball_mem_nhds _ (reduceScale_pos h'ε)
+
+end SmaleSpace
