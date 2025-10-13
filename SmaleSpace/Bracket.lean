@@ -148,45 +148,64 @@ smaller scale have brackets within distance `ε`. We specialize this to `δ₁ :
 -/
 
 variable (X) in
-/-- The scale `reduceScale X ε` is small enough compared to `ε` so that points within the
-smaller scale have brackets within distance `ε`.-/
-noncomputable def reduceScale (ε : ℝ) : ℝ :=
-  if hε : 0 < ε then (exists_dist_bracket_lt X hε).choose
-  else ε
+/-- In a space with a Ruelle bracket, we introduce a function `reduceScale` associating to `ε`
+a smaller scale so that points within the smaller scale have brackets within distance `ε`.
+Such a function always exists (by continuity) but instead we provide it as data:
+having a control of this function over a whole family of systems is important when proving
+structural stability, so we can not just rely on choice to get it.
+To get one such arbitrary function, one can use `hasReduceScaleDefault`. -/
+class HasReduceScale where
+  /-- The scale `reduceScale X ε` is small enough compared to `ε` so that points within the
+  smaller scale have brackets within distance `ε`.-/
+  reduceScale (ε : ℝ) : ℝ
+  reduceScale_pos {ε : ℝ} (hε : 0 < ε) : 0 < reduceScale ε
+  reduceScale_le_half_self {ε : ℝ} : reduceScale ε ≤ ε / 2
+  reduceScale_le_half_deltaZero {ε : ℝ}: reduceScale ε ≤ δ₀ / 2
+  dist_bracket_lt_of_lt_reduceScale {ε : ℝ} {x y z : X}
+    (hxy : dist x y < reduceScale ε) (hxz : dist x z < reduceScale ε) :
+    dist x ⁅y, z⁆ < ε
 
-lemma reduceScale_pos (hε : 0 < ε) : 0 < reduceScale X ε := by
-  simp only [reduceScale, hε, ↓reduceDIte]
-  exact (exists_dist_bracket_lt X hε).choose_spec.1.1
+/-- A possible construction of an arbitrary reducing scale function, based on
+continuity and choice. -/
+noncomputable def hasReduceScaleDefault : HasReduceScale X where
+  reduceScale (ε : ℝ) : ℝ :=
+    if hε : 0 < ε then (exists_dist_bracket_lt X hε).choose
+    else ε
+  reduceScale_pos hε := by
+    simp only [hε, ↓reduceDIte]
+    exact (exists_dist_bracket_lt X hε).choose_spec.1.1
+  reduceScale_le_half_self {ε} := by
+    by_cases hε : 0 < ε
+    · simp only [hε, ↓reduceDIte]
+      apply (exists_dist_bracket_lt X hε).choose_spec.1.2.trans
+      gcongr
+      exact min_le_left _ _
+    · simp only [hε, ↓reduceDIte]
+      linarith
+  reduceScale_le_half_deltaZero {ε} := by
+    by_cases hε : 0 < ε
+    · simp only [hε, ↓reduceDIte]
+      apply (exists_dist_bracket_lt X hε).choose_spec.1.2.trans
+      gcongr
+      exact min_le_right _ _
+    · simp only [hε, ↓reduceDIte]
+      linarith [deltaZero_pos (X := X)]
+  dist_bracket_lt_of_lt_reduceScale {ε x y z} hxy hxz := by
+    by_cases hε : 0 < ε
+    · simp only [hε, ↓reduceDIte] at hxy hxz
+      exact (exists_dist_bracket_lt X hε).choose_spec.2 x y z hxy hxz
+    · simp [hε] at hxy
+      linarith [dist_nonneg (x := x) (y := y)]
 
-lemma reduceScale_le_half_self : reduceScale X ε ≤ ε / 2 := by
-  by_cases hε : 0 < ε
-  · simp only [reduceScale, hε, ↓reduceDIte]
-    apply (exists_dist_bracket_lt X hε).choose_spec.1.2.trans
-    gcongr
-    exact min_le_left _ _
-  · simp only [reduceScale, hε, ↓reduceDIte]
-    linarith
+export HasReduceScale (reduceScale reduceScale_pos reduceScale_le_half_self
+  reduceScale_le_half_deltaZero dist_bracket_lt_of_lt_reduceScale)
 
-lemma reduceScale_le_half_deltaZero : reduceScale X ε ≤ δ₀ / 2 := by
-  by_cases hε : 0 < ε
-  · simp only [reduceScale, hε, ↓reduceDIte]
-    apply (exists_dist_bracket_lt X hε).choose_spec.1.2.trans
-    gcongr
-    exact min_le_right _ _
-  · simp only [reduceScale, hε, ↓reduceDIte]
-    linarith [deltaZero_pos (X := X)]
+section
+
+variable [HasReduceScale X]
 
 lemma reduceScale_le_deltaZero : reduceScale X ε ≤ δ₀ := by
   linarith [reduceScale_le_half_deltaZero (X := X) (ε := ε), deltaZero_pos (X := X)]
-
-lemma dist_bracket_lt_of_lt_reduceScale {x y z : X}
-    (hxy : dist x y < reduceScale X ε) (hxz : dist x z < reduceScale X ε) :
-    dist x ⁅y, z⁆ < ε := by
-  by_cases hε : 0 < ε
-  · simp only [reduceScale, hε, ↓reduceDIte] at hxy hxz
-    exact (exists_dist_bracket_lt X hε).choose_spec.2 x y z hxy hxz
-  · simp [reduceScale, hε] at hxy
-    linarith [dist_nonneg (x := x) (y := y)]
 
 variable (X) in
 /-- A fixed size, sufficiently smaller than `δ₀` to ensure that brackets of points within `δ₁`
@@ -204,6 +223,8 @@ lemma deltaOne_le_deltaZero : δ₁ ≤ δ₀ := by
 
 lemma dist_bracket_lt_deltaZero {x y z : X} (hxy : dist x y < δ₁) (hxz : dist x z < δ₁) :
     dist x ⁅y, z⁆ < δ₀ := dist_bracket_lt_of_lt_reduceScale hxy hxz
+
+end
 
 /-!
 ### Local stable and unstable manifolds, local parametrization with product coordinates
@@ -244,6 +265,9 @@ lemma locUnstable_eq (hε : ε ≤ δ₀) : locUnstable ε o = {u | dist o u < �
   refine ⟨fun h' ↦ ?_, fun h' ↦ ?_⟩
   · rw [← h', bracket_left, bracket_self] <;> linarith
   · rw [← h', bracket_left, bracket_self] <;> linarith
+
+variable [HasReduceScale X]
+local notation3 "δ₁" => deltaOne X
 
 /-- For small enough `ε`, one can parametrize a neighborhood of any point `o` by
 taking the bracket of points on its stable and unstable manifolds of size `ε`.
@@ -325,9 +349,10 @@ entourage `bracketRoot U` is covered by the local product parametrization coming
 lemma ball_reduceScale_subset_target_localProductEquiv (hε : ε ≤ δ₁) :
     ball o (reduceScale X ε) ⊆ (localProductEquiv hε o).target := by
   by_cases hε : 0 < ε; swap
-  · simp only [reduceScale, hε, ↓reduceDIte, localProductEquiv_target]
-    rw [Metric.ball_eq_empty.2 (by linarith)]
-    simp
+  · rw [Metric.ball_eq_empty.2]
+    · simp
+    apply reduceScale_le_half_self.trans
+    linarith
   intro y (hy : dist y o < reduceScale X ε)
   rw [dist_comm] at hy
   simp only [localProductEquiv_target, mem_setOf_eq]
@@ -342,5 +367,52 @@ lemma target_localProductEquiv_mem_nhds (hε : ε ≤ δ₁) (h'ε : 0 < ε) :
     (localProductEquiv hε o).target ∈ 𝓝 o := by
   apply mem_of_superset _ (ball_reduceScale_subset_target_localProductEquiv hε)
   exact ball_mem_nhds _ (reduceScale_pos h'ε)
+
+/-!
+### Reversing stable and unstable direction
+
+It is often convenient to prove something for the unstable direction, and then deduce it for the
+stable one, or conversely. For this, we endow the type copy `Xᵒᵖ` with the reverse bracket and
+the reverse dynamics.
+-/
+
+def invDyn (X : Type*) : Type _ := X
+
+instance : MetricSpace (invDyn X) := inferInstanceAs (MetricSpace X)
+
+#check Prod.swap
+
+/- Missing:
+UniformContinuous (fun (p : X × X) ↦ Prod.swap p) :=
+      UniformContinuous.prodMk uniformContinuous_snd uniformContinuous_fst
+
+UniformContinuous.uniformContinuousOn
+UniformContinuousOn.mono
+
+-/
+
+lemma _root_.UniformContinuous.uniformContinuousOn {α β : Type*} [UniformSpace α] [UniformSpace β]
+    {f : α → β} (hf : UniformContinuous f) {s : Set α} : UniformContinuousOn f s :=
+  tendsto_inf_left hf
+
+lemma _root_.UniformContinuousOn.comp {α β γ : Type*}
+    [UniformSpace α] [UniformSpace β] [UniformSpace γ]
+    {g : β → γ} {f : α → β} {t : Set β} {s : Set α} (hg : UniformContinuousOn g t)
+    (hf : UniformContinuousOn f s) (hst : MapsTo f s t) : UniformContinuousOn (g ∘ f) s := by
+
+
+
+#check UniformContinuous.comp
+
+instance : HasRuelleBracket (invDyn X) where
+  toFun x y := (⁅show X from y, x⁆ : X)
+  deltaZero := δ₀
+  deltaZero_pos := deltaZero_pos
+  unifCont := by
+    have A : UniformContinuous (fun (p : X × X) ↦ Prod.swap p) :=
+      UniformContinuous.prodMk uniformContinuous_snd uniformContinuous_fst
+    have B : UniformContinuousOn (fun (p : X × X) ↦ Prod.swap p) {p | dist p.1 p.2 < δ₀} :=
+      A.uniformContinuousOn
+    have C := (uniformContinuousOn_bracket X).comp B
 
 end SmaleSpace

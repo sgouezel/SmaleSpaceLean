@@ -19,6 +19,6 @@ class HasRuelleBracketWithMap extends HasRuelleBracket X where
   lambda : ℝ
   lambda_pos : 0 < lambda
   lambda_lt_one : lambda < 1
-  T_bracket x y (hx : dist x y < δ₀) : ⁅T x, T y⁆ = T ⁅x, y⁆
+  T_bracket x y (h : dist x y < δ₀) (h' : dist (T x) (T y) < δ₀) : ⁅T x, T y⁆ = T ⁅x, y⁆
   expansion x y (hxy : y ∈ locUnstable δ₀ x) : dist (T.symm x) (T.symm y) ≤ lambda * dist x y
-  contration x y (hxy : y ∈ locUnstable δ₀ x) : lambda * dist x y ≤ dist (T x) (T y)
+  contration x y (hxy : y ∈ locStable δ₀ x) : dist (T x) (T y) ≤ lambda * dist x y
