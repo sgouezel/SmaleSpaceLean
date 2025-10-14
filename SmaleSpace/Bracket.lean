@@ -286,6 +286,21 @@ lemma locStable_eq (hε : ε ≤ δ₀) : locStable ε o = {s | dist o s < ε �
   · rw [← h', bracket_right, bracket_self] <;> linarith
   · rw [← h', bracket_right, bracket_self] <;> linarith
 
+lemma bracket_mem_locStable [HasReduceScale X] (hx : dist o x < reduceScale X ε) :
+    ⁅x, o⁆ ∈ locStable ε o := by
+  refine ⟨?_, ?_⟩
+  · apply dist_bracket_lt_of_lt_reduceScale hx
+    simp only [dist_self]
+    apply lt_of_le_of_lt (by positivity) hx
+  · rw [bracket_left]
+    · rw [dist_comm]
+      apply hx.trans_le reduceScale_le_deltaZero
+    · simp [deltaZero_pos]
+
+lemma locStable_mono {ε ε' : ℝ} (h : ε ≤ ε') : locStable ε o ⊆ locStable ε' o := by
+  simp only [locStable, setOf_subset_setOf, and_imp]
+  grind
+
 lemma mem_of_mem_locUnstable (hu : u ∈ locUnstable ε o) : dist o u < ε := hu.1
 
 lemma bracket_eq_of_mem_locUnstable (hu : u ∈ locUnstable ε o) : ⁅o, u⁆ = u := hu.2
@@ -298,6 +313,20 @@ lemma locUnstable_eq (hε : ε ≤ δ₀) : locUnstable ε o = {u | dist o u < �
   refine ⟨fun h' ↦ ?_, fun h' ↦ ?_⟩
   · rw [← h', bracket_left, bracket_self] <;> linarith
   · rw [← h', bracket_left, bracket_self] <;> linarith
+
+lemma bracket_mem_locUnstable [HasReduceScale X] (hx : dist o x < reduceScale X ε) :
+    ⁅o, x⁆ ∈ locUnstable ε o := by
+  refine ⟨?_, ?_⟩
+  · apply dist_bracket_lt_of_lt_reduceScale _ hx
+    simp only [dist_self]
+    apply lt_of_le_of_lt (by positivity) hx
+  · rw [bracket_right]
+    · simp [deltaZero_pos]
+    · apply hx.trans_le reduceScale_le_deltaZero
+
+lemma locUnstable_mono {ε ε' : ℝ} (h : ε ≤ ε') : locUnstable ε o ⊆ locUnstable ε' o := by
+  simp only [locUnstable, setOf_subset_setOf, and_imp]
+  grind
 
 variable [HasReduceScale X]
 local notation3 "δ₁" => deltaOne X
