@@ -24,7 +24,7 @@ two-dimensional, then `⁅p, q⁆ = (p.1, q.2)` is the intersection of the verti
 and the horizontal line through `q`.
 
 This file is an experiment to implement Ruelle bracket in terms of uniformities. This works quite
-well, but for subsequence results this is not enough (convergence of geometric series is key for
+well, but for subsequent results this is not enough (convergence of geometric series is key for
 the shadowing lemma, and not really natural to express with uniformities). So we've switched
 to a design based on distances, and only keep this file for the record.
 -/
@@ -349,7 +349,7 @@ lemma SmallEnough.continuousOn_symm_localProductEquiv (hU : SmallEnough U) :
     exact hxo
 
 /-- Given a small enough entourage `U`, the ball around `o` for the smaller
-entourage `bracketRoot U` is covered by the local product parametrization coming from `U`.-/
+entourage `bracketRoot U` is covered by the local product parametrization coming from `U`. -/
 lemma SmallEnough.bracketRoot_subset_target_localProductEquiv (hU : SmallEnough U) :
     UniformSpace.ball o (bracketRoot U) ⊆ (hU.localProductEquiv o).target := by
   by_cases h'U : U ∈ 𝓤 X; swap

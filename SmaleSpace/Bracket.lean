@@ -156,7 +156,7 @@ structural stability, so we can not just rely on choice to get it.
 To get one such arbitrary function, one can use `hasReduceScaleDefault`. -/
 class HasReduceScale where
   /-- The scale `reduceScale X ε` is small enough compared to `ε` so that points within the
-  smaller scale have brackets within distance `ε`.-/
+  smaller scale have brackets within distance `ε`. -/
   reduceScale (ε : ℝ) : ℝ
   reduceScale_pos {ε : ℝ} (hε : 0 < ε) : 0 < reduceScale ε
   reduceScale_le_half_self {ε : ℝ} : reduceScale ε ≤ ε / 2
@@ -410,8 +410,8 @@ lemma continuousOn_symm_localProductEquiv (hε : ε ≤ δ₁) :
     intro x ⟨hxo, hx, h'x⟩
     exact hxo
 
-/-- Given a small enough entourage `U`, the ball around `o` for the smaller
-entourage `bracketRoot U` is covered by the local product parametrization coming from `U`.-/
+/-- Given a small enough `ε`, the ball around `o` for the smaller
+scale `reduceScale X ε` is covered by the local product parametrization of size `ε`. -/
 lemma ball_reduceScale_subset_target_localProductEquiv (hε : ε ≤ δ₁) :
     ball o (reduceScale X ε) ⊆ (localProductEquiv hε o).target := by
   by_cases hε : 0 < ε; swap

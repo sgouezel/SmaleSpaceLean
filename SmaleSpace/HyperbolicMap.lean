@@ -21,16 +21,24 @@ class HasRuelleBracketWithMap extends HasRuelleBracket X where
   lambda : ℝ
   lambda_pos : 0 < lambda
   lambda_lt_one : lambda < 1
-  bracket_image x y (h : dist x y < δ₀) (h' : dist (mapT x) (mapT y) < δ₀) :
+  bracket_image {x y : X} (h : dist x y < δ₀) (h' : dist (mapT x) (mapT y) < δ₀) :
     ⁅mapT x, mapT y⁆ = mapT ⁅x, y⁆
-  expansion x y (hxy : y ∈ locUnstable δ₀ x) : dist (mapT.symm x) (mapT.symm y) ≤ lambda * dist x y
-  contraction x y (hxy : y ∈ locStable δ₀ x) : dist (mapT x) (mapT y) ≤ lambda * dist x y
+  expansion {x y : X} (hxy : y ∈ locUnstable δ₀ x) :
+    dist (mapT.symm x) (mapT.symm y) ≤ lambda * dist x y
+  contraction {x y : X} (hxy : y ∈ locStable δ₀ x) :
+    dist (mapT x) (mapT y) ≤ lambda * dist x y
 
 local notation3 "T.symm" => Equiv.symm (HasRuelleBracketWithMap.mapT (X := X))
 local notation3 "T" => HasRuelleBracketWithMap.mapT (X := X)
 local notation3 "λ" => HasRuelleBracketWithMap.lambda (X := X)
 
 export HasRuelleBracketWithMap (lambda_pos lambda_lt_one bracket_image expansion contraction)
+
+lemma bracket_image_symm [h : HasRuelleBracketWithMap X] {x y : X} (h : dist x y < δ₀)
+    (h' : dist (T.symm x) (T.symm y) < δ₀) :
+    ⁅T.symm x, T.symm y⁆ = T.symm ⁅x, y⁆ := by
+  rw [← Equiv.apply_eq_iff_eq_symm_apply]
+  simpa using (bracket_image h' (by simpa using h)).symm
 
 /-- If `T` is a hyperbolic map on a space `X`, then `T⁻¹` is also hyperbolic (with respect to the
 reversed bracket). We register this as a typeclass on the type synonym `invDyn X`. -/
@@ -41,20 +49,9 @@ instance [h : HasRuelleBracketWithMap X] : HasRuelleBracketWithMap (invDyn X) wh
   lambda := h.lambda
   lambda_pos := h.lambda_pos
   lambda_lt_one := h.lambda_lt_one
-  bracket_image x y h₁ h₂ := by
-    rw [dist_comm] at h₁ h₂
-    have W := h.bracket_image _ _ h₂ ?_; swap
-    · convert h₁ using 1
-      congr
-      · apply Equiv.apply_symm_apply
-      · apply Equiv.apply_symm_apply
-    rw [← Equiv.apply_eq_iff_eq_symm_apply]
-    apply W.symm.trans
-    congr
-    · apply Equiv.apply_symm_apply
-    · apply Equiv.apply_symm_apply
-  expansion x y hxy := h.contraction (ofInvDyn x) (ofInvDyn y) hxy
-  contraction x y hxy := h.expansion (ofInvDyn x) (ofInvDyn y) hxy
+  bracket_image {x y} h₁ h₂ := by rw [dist_comm] at h₁ h₂; exact bracket_image_symm (X := X) h₁ h₂
+  expansion hxy := h.contraction hxy
+  contraction hxy := h.expansion hxy
 
 variable {X}
 variable [HasRuelleBracketWithMap X]
@@ -63,7 +60,7 @@ lemma image_mem_locStable {ε : ℝ} (hε : ε ≤ δ₀) {x o : X} (h : x ∈ l
     T x ∈ locStable (λ * ε) (T o) := by
   simp only [locStable, mem_setOf_eq]
   have A : dist (T o) (T x) < λ * ε := by
-    apply (contraction _ _ (locStable_mono hε h)).trans_lt
+    apply (contraction (locStable_mono hε h)).trans_lt
     gcongr
     · apply lambda_pos
     · exact h.1
@@ -125,39 +122,45 @@ lemma dist_image_iter_le_of_pseudoOrbit
 
 variable [HasReduceScale X]
 
-
 lemma future_shadowing_aux (ε δ : ℝ) (hε : 0 < ε) (hδ : 0 < δ) (h'δ : δ ≤ δ₀) (x : ℕ → X)
-    (hx : ∀ n, dist (T (x n)) (x (n+1)) < ε) (M : ℕ) (hM : 2 * λ ^ M * δ ≤ reduceScale X δ)
+    (hx : ∀ n, dist (T (x n)) (x (n + 1)) < ε) (M : ℕ) (hM : 2 * λ ^ M * δ ≤ reduceScale X δ)
     (hε : ∀ (u : ℕ → X), (∀ n, dist (T (u n)) (u (n + 1)) < ε) →
-      dist (T ^[M] (u 0)) (u M) < reduceScale X δ / 2) :
+      dist (T^[M] (u 0)) (u M) < reduceScale X δ / 2) :
     ∃ p ∈ locUnstable ε (x 0), ∀ n, dist (x n) (T ^[n] p) < ε := by
   -- define inductively a sequence by `y₀ = x₀`, and `y_{n+1}` the intersection of `W^u (T^M yₙ)`
   -- and `W^s (x_{M * (n+1)})`.
   let y := Nat.rec (motive := fun n ↦ X) (x 0) (fun n q ↦ ⁅T^[M] q, x (M * (n + 1))⁆)
-  have A n : y n ∈ locStable δ (x (M * n)) := by
+  have A_aux n (hn : y n ∈ locStable δ (x (M * n))) :
+      dist (x (M * (n + 1))) ((⇑T)^[M] (y n)) < reduceScale ((fun n ↦ X) (n + 1)) δ := by
+    apply (dist_triangle_left _ _ (T^[M] (x (M * n)))).trans_lt
+    have A : dist (T^[M] (x (M * n))) (x (M * (n + 1))) < reduceScale X δ / 2 :=
+      hε (fun k ↦ x (M * n + k)) (fun k ↦ hx (M * n + k))
+    have B : dist (T^[M] (x (M * n))) (T^[M] (y n)) < λ ^ M * δ :=
+      (image_iter_mem_locStable h'δ hn M).1
+    linarith
+  have B n : y n ∈ locStable δ (x (M * n)) := by
     induction n with
-    | zero =>
-      simp [y, hδ, locStable]
+    | zero => simp [y, hδ, locStable]
     | succ n ih =>
       rw [show y (n + 1) = ⁅T^[M] (y n), x (M * (n + 1))⁆ by rfl]
-      apply bracket_mem_locStable
-      apply (dist_triangle_left _ _ (T^[M] (x (M * n)))).trans_lt
-      have A : dist (T^[M] (x (M * n))) (x (M * (n + 1))) < reduceScale X δ / 2 :=
-        hε (fun k ↦ x (M * n + k)) (fun k ↦ hx (M * n + k))
-      have B : dist (T^[M] (x (M * n))) (T^[M] (y n)) < λ ^ M * δ :=
-        (image_iter_mem_locStable h'δ ih M).1
-      linarith
+      exact bracket_mem_locStable (A_aux n ih)
+  have A n : dist (x (M * (n + 1))) ((⇑T)^[M] (y n)) < reduceScale ((fun n ↦ X) (n + 1)) δ :=
+    A_aux n (B n)
+  have C n : y (n + 1) ∈ locUnstable δ (T^[M] (y n)) := by
+    rw [show y (n + 1) = ⁅T^[M] (y n), x (M * (n + 1))⁆ by rfl]
+    apply bracket_mem_locUnstable
+    rw [dist_comm]
+    exact A n
+  let z n := T.symm^[M * n] (y n)
+  have Z n : z (n + 1) ∈ locUnstable (λ ^ (M * (n + 1)) * δ) (z n) := by
+    convert image_iter_mem_locUnstable h'δ (C n) (n := M * (n + 1)) using 2
+    have L : Function.LeftInverse T.symm^[M] T^[M] := (Equiv.leftInverse_symm T).iterate _
+    rw [mul_add, iterate_add_apply, mul_one, L (y n)]
+  sorry
 
-
-
-
-
-
-
-
-
-lemma future_shadowing (ε : ℝ) (hε : 0 < ε) (x : ℕ → X) (hx : ∀ n, dist (x (n+1)) (T (x n)) ≤ ε) :
+lemma future_shadowing (ε : ℝ) (hε : 0 < ε) (x : ℕ → X)
+    (hx : ∀ n, dist (x (n + 1)) (T (x n)) ≤ ε) :
     ∃ p ∈ locUnstable ε (x 0), ∀ n, dist (x n) (T ^[n] p) < ε := by
-  -- define inductively a sequence by `y₀ = x₀`, and `y_{n+1}` is the intersection of `W^u (T yₙ)`
-  -- and `W ^ s (x_{n+1})`.
-  let y := Nat.rec (motive := fun n ↦ X) (x 0) (fun n q ↦ ⁅T q, x (n + 1)⁆)
+  sorry
+
+end SmaleSpace
