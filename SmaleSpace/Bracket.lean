@@ -27,39 +27,6 @@ and the horizontal line through `q`.
 open scoped Uniformity Topology
 open Function Set Filter Metric
 
-section
-
--- PRed to mathlib in UniformSpace.Basic, remove when upstreamed
-
-variable {α β γ : Type*} [UniformSpace α] [UniformSpace β] [UniformSpace γ] {f : α → β} {g : β → γ}
-  {s t : Set α}
-
-lemma UniformContinuous.uniformContinuousOn
-    (hf : UniformContinuous f)  : UniformContinuousOn f s :=
-  tendsto_inf_left hf
-
-lemma UniformContinuousOn.mono (hf : UniformContinuousOn f s) (ht : t ⊆ s) :
-    UniformContinuousOn f t :=
-  Tendsto.mono_left hf (inf_le_inf le_rfl (by simp [ht]))
-
-lemma UniformContinuous.swap : UniformContinuous (Prod.swap : α × β → β × α) :=
-  uniformContinuous_snd.prodMk uniformContinuous_fst
-
-lemma UniformContinuousOn.comp
-    {t : Set β} (hg : UniformContinuousOn g t)
-    (hf : UniformContinuousOn f s) (hst : MapsTo f s t) : UniformContinuousOn (g ∘ f) s := by
-  change Tendsto ((fun x ↦ (g x.1, g x.2)) ∘ (fun x ↦ (f x.1, f x.2))) (𝓤 α ⊓ 𝓟 (s ×ˢ s)) (𝓤 γ)
-  apply Tendsto.comp hg
-  refine tendsto_inf.2 ⟨hf, tendsto_inf_right ?_⟩
-  simp only [tendsto_principal, mem_prod, eventually_principal, and_imp, Prod.forall]
-  exact fun a b ha hb ↦ ⟨hst ha, hst hb⟩
-
-lemma UniformContinuous.comp_uniformContinuousOn
-    (hg : UniformContinuous g) (hf : UniformContinuousOn f s) : UniformContinuousOn (g ∘ f) s :=
-  (hg.uniformContinuousOn (s := univ)).comp hf (mapsTo_univ _ _)
-
-end
-
 namespace SmaleSpace
 
 variable (X : Type*) [MetricSpace X] {U V : Set (X × X)} {a b c o s u x y z : X} {ε : ℝ}
@@ -260,6 +227,55 @@ lemma dist_bracket_lt_deltaZero {x y z : X} (hxy : dist x y < δ₁) (hxz : dist
 end
 
 /-!
+### Reversing stable and unstable directions
+
+It is often convenient to prove something for the stable direction, and then deduce it for the
+unstable one, or conversely. For this, we endow the type copy `invDyn X` with the reverse bracket
+and the reverse dynamics.
+-/
+
+def invDyn (X : Type*) : Type _ := X
+
+def ofInvDyn {X : Type*} (x : invDyn X) : X := x
+
+def toInvDyn {X : Type*} (x : X) : invDyn X := x
+
+instance : MetricSpace (invDyn X) := inferInstanceAs (MetricSpace X)
+
+instance : HasRuelleBracket (invDyn X) where
+  toFun x y := toInvDyn ⁅ofInvDyn y, ofInvDyn x⁆
+  deltaZero := δ₀
+  deltaZero_pos := deltaZero_pos
+  unifCont := by
+    have A : UniformContinuousOn (fun (p : X × X) ↦ Prod.swap p) {p | dist p.1 p.2 < δ₀} :=
+      uniformContinuous_swap.uniformContinuousOn
+    have B : MapsTo (fun (p : X × X) ↦ p.swap)
+      {p | dist p.1 p.2 < δ₀} {p | dist p.1 p.2 < δ₀} := by simp [MapsTo, dist_comm]
+    exact (uniformContinuousOn_bracket X).comp A B
+  refl o := by simp [toInvDyn, ofInvDyn]
+  bracket_left' x y z hxy hyz := by
+    apply bracket_right (X := X)
+    · rw [dist_comm]
+      exact hyz
+    · rw [dist_comm]
+      exact hxy
+  bracket_right' x y z hxy hyz := by
+    apply bracket_left (X := X)
+    · rw [dist_comm]
+      exact hyz
+    · rw [dist_comm]
+      exact hxy
+
+instance [HasReduceScale X] : HasReduceScale (invDyn X) where
+  reduceScale := reduceScale X
+  reduceScale_pos := reduceScale_pos (X := X)
+  reduceScale_le_half_self := reduceScale_le_half_self (X := X)
+  reduceScale_le_half_deltaZero := reduceScale_le_half_deltaZero (X := X)
+  dist_bracket_lt_of_lt_reduceScale hxy hxz :=
+    dist_bracket_lt_of_lt_reduceScale (X := X) hxz hxy
+
+
+/-!
 ### Local stable and unstable manifolds, local parametrization with product coordinates
 -/
 
@@ -305,28 +321,16 @@ lemma mem_of_mem_locUnstable (hu : u ∈ locUnstable ε o) : dist o u < ε := hu
 
 lemma bracket_eq_of_mem_locUnstable (hu : u ∈ locUnstable ε o) : ⁅o, u⁆ = u := hu.2
 
-lemma locUnstable_eq (hε : ε ≤ δ₀) : locUnstable ε o = {u | dist o u < ε ∧ ⁅u, o⁆ = o} := by
-  ext u
-  have : dist o u = dist u o := PseudoMetricSpace.dist_comm o u
-  simp only [locUnstable, mem_setOf_eq, and_congr_right_iff]
-  intro h
-  refine ⟨fun h' ↦ ?_, fun h' ↦ ?_⟩
-  · rw [← h', bracket_left, bracket_self] <;> linarith
-  · rw [← h', bracket_left, bracket_self] <;> linarith
+lemma locUnstable_eq (hε : ε ≤ δ₀) : locUnstable ε o = {u | dist o u < ε ∧ ⁅u, o⁆ = o} :=
+  locStable_eq (X := invDyn X) hε
 
 lemma bracket_mem_locUnstable [HasReduceScale X] (hx : dist o x < reduceScale X ε) :
-    ⁅o, x⁆ ∈ locUnstable ε o := by
-  refine ⟨?_, ?_⟩
-  · apply dist_bracket_lt_of_lt_reduceScale _ hx
-    simp only [dist_self]
-    apply lt_of_le_of_lt (by positivity) hx
-  · rw [bracket_right]
-    · simp [deltaZero_pos]
-    · apply hx.trans_le reduceScale_le_deltaZero
+    ⁅o, x⁆ ∈ locUnstable ε o :=
+  bracket_mem_locStable (X := invDyn X) hx
 
-lemma locUnstable_mono {ε ε' : ℝ} (h : ε ≤ ε') : locUnstable ε o ⊆ locUnstable ε' o := by
-  simp only [locUnstable, setOf_subset_setOf, and_imp]
-  grind
+lemma locUnstable_mono {ε ε' : ℝ} (h : ε ≤ ε') : locUnstable ε o ⊆ locUnstable ε' o :=
+  locStable_mono (X := invDyn X) h
+
 
 variable [HasReduceScale X]
 local notation3 "δ₁" => deltaOne X
@@ -429,53 +433,5 @@ lemma target_localProductEquiv_mem_nhds (hε : ε ≤ δ₁) (h'ε : 0 < ε) :
     (localProductEquiv hε o).target ∈ 𝓝 o := by
   apply mem_of_superset _ (ball_reduceScale_subset_target_localProductEquiv hε)
   exact ball_mem_nhds _ (reduceScale_pos h'ε)
-
-/-!
-### Reversing stable and unstable direction
-
-It is often convenient to prove something for the unstable direction, and then deduce it for the
-stable one, or conversely. For this, we endow the type copy `Xᵒᵖ` with the reverse bracket and
-the reverse dynamics.
--/
-
-def invDyn (X : Type*) : Type _ := X
-
-def ofInvDyn {X : Type*} (x : invDyn X) : X := x
-
-def toInvDyn {X : Type*} (x : X) : invDyn X := x
-
-instance : MetricSpace (invDyn X) := inferInstanceAs (MetricSpace X)
-
-instance : HasRuelleBracket (invDyn X) where
-  toFun x y := toInvDyn ⁅ofInvDyn y, ofInvDyn x⁆
-  deltaZero := δ₀
-  deltaZero_pos := deltaZero_pos
-  unifCont := by
-    have A : MapsTo (fun (p : X × X) ↦ p.swap)
-        {p | dist p.1 p.2 < δ₀} {p | dist p.1 p.2 < δ₀} := by simp [MapsTo, dist_comm]
-    have B : UniformContinuousOn (fun (p : X × X) ↦ Prod.swap p) {p | dist p.1 p.2 < δ₀} :=
-      UniformContinuous.swap.uniformContinuousOn
-    exact (uniformContinuousOn_bracket X).comp B A
-  refl o := by simp [toInvDyn, ofInvDyn]
-  bracket_left' x y z hxy hyz := by
-    apply bracket_right (X := X)
-    · rw [dist_comm]
-      exact hyz
-    · rw [dist_comm]
-      exact hxy
-  bracket_right' x y z hxy hyz := by
-    apply bracket_left (X := X)
-    · rw [dist_comm]
-      exact hyz
-    · rw [dist_comm]
-      exact hxy
-
-instance : HasReduceScale (invDyn X) where
-  reduceScale := reduceScale X
-  reduceScale_pos := reduceScale_pos (X := X)
-  reduceScale_le_half_self := reduceScale_le_half_self (X := X)
-  reduceScale_le_half_deltaZero := reduceScale_le_half_deltaZero (X := X)
-  dist_bracket_lt_of_lt_reduceScale hxy hxz :=
-    dist_bracket_lt_of_lt_reduceScale (X := X) hxz hxy
 
 end SmaleSpace
