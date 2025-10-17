@@ -5,7 +5,7 @@ open Function Set Filter Metric
 
 namespace SmaleSpace
 
-variable (X : Type*) [MetricSpace X] {U V : Set (X × X)} {a b c o s u x y z : X} {ε : ℝ}
+variable (X : Type*) [MetricSpace X] {U V : Set (X × X)} {a b c o s u x y z : X} {ε : ℝ} {n : ℕ}
 
 local notation3 "δ₀" => HasRuelleBracket.deltaZero X
 local notation3 "δ₁" => deltaOne X
@@ -103,9 +103,44 @@ lemma image_iter_mem_locUnstable (hε : ε ≤ δ₀) (h : x ∈ locUnstable ε 
     T.symm^[n] x ∈ locUnstable (λ ^ n * ε) (T.symm^[n] o) :=
   image_iter_mem_locStable (X := invDyn X) (by exact hε) h n
 
+variable [HasReduceScale X]
+
+/-- If two points follow each other during time `n`, then the difference between their unstable
+components is exponentially small. -/
+lemma mem_locUnstable_lambda_pow_of_forall_dist_le
+    (hx : ∀ i ≤ n, dist (T^[i] o) (T^[i] x) ≤ δ₁) :
+    ⁅o, x⁆ ∈ locUnstable (λ ^ n * δ₀) o := by
+  let y i := ⁅T^[i] o, T^[i] x⁆
+  have A i (hi : i < n) : T (y i) = y (i + 1) := by
+    simp only [y, iterate_succ_apply']
+    rw [bracket_image]
+    · apply (hx i hi.le).trans deltaOne_le_deltaZero
+    · simp only [← iterate_succ_apply']
+      apply (hx (i + 1) (by omega)).trans deltaOne_le_deltaZero
+  have A' i (hi : i ≤ n) : y i = T^[i] (y 0) := by
+    induction i with
+    | zero => simp
+    | succ i ih => rw [← A _ (by omega), ih (by omega), iterate_succ_apply']
+  have B : y n ∈ locUnstable δ₀ (T^[n] o) := by
+    apply bracket_mem_locUnstable
+    exact hx n le_rfl
+  have : y 0 ∈ locUnstable (λ ^ n * δ₀) o := by
+    have L : Function.LeftInverse T.symm^[n] T^[n] := (Equiv.leftInverse_symm T).iterate _
+    convert image_iter_mem_locUnstable le_rfl B n
+    · rw [L o]
+    · rw [A' n le_rfl, L (y 0)]
+  exact this
+
+/-- If two points follow each other during time `n` in the past, then the difference between their
+stable components is exponentially small. -/
+lemma mem_locStable_lambda_pow_of_forall_dist_le
+    (hx : ∀ i ≤ n, dist (T.symm^[i] o) (T.symm^[i] x) ≤ δ₁) :
+    ⁅x, o⁆ ∈ locStable (λ ^ n * δ₀) o :=
+  mem_locUnstable_lambda_pow_of_forall_dist_le (X := invDyn X) hx
+
 /-- The local stable manifold of a point `o` of size `ε` is exactly the set of points that
 remain within distance `ε` of the orbit of `o` in the future. -/
-lemma locStable_eq_dist_iter_le [HasReduceScale X] (hε : ε ≤ δ₁) :
+lemma locStable_eq_dist_iter_le (hε : ε ≤ δ₁) :
     locStable ε o = {x | ∀ n, dist (T^[n] o) (T^[n] x) ≤ ε} := by
   have h'ε : ε ≤ δ₀ := hε.trans deltaOne_le_deltaZero
   apply Subset.antisymm
@@ -115,28 +150,11 @@ lemma locStable_eq_dist_iter_le [HasReduceScale X] (hε : ε ≤ δ₁) :
     have : 0 ≤ ε := dist_nonneg.trans hx.1
     nlinarith
   · intro x hx
-    rw [locStable_eq h'ε]
-    refine ⟨by simpa using hx 0, ?_⟩
-    let y n := ⁅T^[n] o, T^[n] x⁆
-    have A n : T (y n) = y (n + 1) := by
-      simp only [y, iterate_succ_apply']
-      rw [bracket_image]
-      · apply (hx n).trans h'ε
-      · simp only [← iterate_succ_apply']
-        apply (hx (n + 1)).trans h'ε
-    have A' n : y n = T^[n] (y 0) := by
-      induction n with
-      | zero => simp
-      | succ n ih => simp only [← A, ih, iterate_succ_apply']
-    have B n : y n ∈ locUnstable δ₀ (T^[n] o) := by
-      apply bracket_mem_locUnstable
-      exact (hx n).trans hε
-    have C n : y 0 ∈ locUnstable (λ ^ n * δ₀) o := by
-      have L : Function.LeftInverse T.symm^[n] T^[n] := (Equiv.leftInverse_symm T).iterate _
-      convert image_iter_mem_locUnstable le_rfl (B n) n
-      · rw [L o]
-      · rw [A' n, L (y 0)]
-    have : dist o (y 0) = 0 := by
+    rw [locStable_eq (hε.trans deltaOne_le_deltaZero)]
+    refine ⟨hx 0, ?_⟩
+    have C n : ⁅o, x⁆ ∈ locUnstable (λ ^ n * δ₀) o := by
+      apply mem_locUnstable_lambda_pow_of_forall_dist_le (fun i hi ↦ (hx i).trans hε)
+    have : dist o ⁅o, x⁆ = 0 := by
       apply le_antisymm ?_ dist_nonneg
       have : Tendsto (fun n ↦ λ ^ n * δ₀) atTop (𝓝 (0 * δ₀)) :=
         (tendsto_pow_atTop_nhds_zero_of_lt_one lambda_pos.le lambda_lt_one).mul_const _
@@ -147,9 +165,60 @@ lemma locStable_eq_dist_iter_le [HasReduceScale X] (hε : ε ≤ δ₁) :
 
 /-- The local unstable manifold of a point `o` of size `ε` is exactly the set of points that
 remain within distance `ε` of the orbit of `o` in the past. -/
-lemma locUnstable_eq_dist_iter_le [HasReduceScale X] (hε : ε ≤ δ₁) :
+lemma locUnstable_eq_dist_iter_le (hε : ε ≤ δ₁) :
     locUnstable ε o = {x | ∀ n, dist (T.symm^[n] o) (T.symm^[n] x) ≤ ε} :=
   locStable_eq_dist_iter_le (X := invDyn X) hε
+
+/-- If two points follow each other during time `n`, both in the past and in the future, then they
+are exponentially close. -/
+lemma expansive_finite_time (h : ∀ i ≤ n, dist (T^[i] x) (T^[i] y) ≤ δ₁)
+    (h' : ∀ i ≤ n, dist (T.symm^[i] x) (T.symm^[i] y) ≤ δ₁) :
+    dist x y ≤ 2 * λ^n * δ₀ := by
+  have : dist x ⁅y, x⁆ ≤ λ ^ n * δ₀ := (mem_locStable_lambda_pow_of_forall_dist_le h').1
+  have : dist y ⁅y, x⁆ ≤ λ ^ n * δ₀ := by
+    have : ∀ i ≤ n, dist (T^[i] y) (T^[i] x) ≤ δ₁ := by
+      intro i hi
+      rw [dist_comm]
+      exact h i hi
+    exact (mem_locUnstable_lambda_pow_of_forall_dist_le this).1
+  linarith [dist_triangle_right x y ⁅y, x⁆]
+
+/-- If two points follow each other during time `n`, both in the past and in the future, then they
+are exponentially close. -/
+lemma expansive_finite_time' (h : ∀ (i : ℤ), i.natAbs ≤ n → dist ((T ^ i) x) ((T ^ i) y) ≤ δ₁) :
+    dist x y ≤ 2 * λ^n * δ₀ := by
+  apply expansive_finite_time
+  · intro i hi
+    exact h (i : ℤ) (by omega)
+  · intro i hi
+    have : T.symm^[i] = ⇑(T ^ (-i : ℤ)) := by
+      simp only [Equiv.Perm.iterate_eq_pow, zpow_neg, zpow_natCast, DFunLike.coe_fn_eq]
+      rfl
+    convert h (-i : ℤ) (by omega)
+
+/-- If two points follow each other, both in the past and in the future, then they coincide. -/
+lemma expansive (h : ∀ i, dist (T^[i] x) (T^[i] y) ≤ δ₁)
+    (h' : ∀ i, dist (T.symm^[i] x) (T.symm^[i] y) ≤ δ₁) : x = y := by
+  apply eq_of_dist_eq_zero
+  apply le_antisymm ?_ dist_nonneg
+  have : Tendsto (fun n ↦ 2 * λ ^ n * δ₀) atTop (𝓝 (2 * 0 * δ₀)) :=
+    ((tendsto_pow_atTop_nhds_zero_of_lt_one lambda_pos.le lambda_lt_one).const_mul _).mul_const _
+  rw [mul_zero, zero_mul] at this
+  apply ge_of_tendsto' this (fun n ↦ ?_)
+  apply expansive_finite_time (fun i hi ↦ h i) (fun i hi ↦ h' i)
+
+/-- If two points follow each other, both in the past and in the future, then they coincide. -/
+lemma expansive' (h : ∀ (i : ℤ), dist ((T ^ i) x) ((T ^ i) y) ≤ δ₁) : x = y := by
+  apply expansive (fun i ↦ h i) (fun i ↦ ?_)
+  have : T.symm^[i] = ⇑(T ^ (-i : ℤ)) := by
+    simp only [Equiv.Perm.iterate_eq_pow, zpow_neg, zpow_natCast, DFunLike.coe_fn_eq]
+    rfl
+  convert h (-i : ℤ)
+
+
+
+
+
 
 /-- Given a positive parameter `δ`, an integer `n` and a uniformly continuous map `f`, one may find
 `ε > 0` such that any `ε`-pseudo-orbit does not deviate from a genuine orbit by more than `δ`
@@ -184,7 +253,7 @@ lemma exists_dist_image_iter_le_of_pseudoOrbit
       · exact (hu n).trans (min_le_right _ _)
     _ = δ := by linarith
 
-variable [HasReduceScale X] [CompleteSpace X]
+variable [CompleteSpace X]
 
 --TODO: upstream
 attribute [fun_prop] Continuous.iterate
@@ -346,12 +415,32 @@ Then, `ε` should be small enough that an `ε`-pseudo-orbit does not deviate fro
 by more than `reduceScale X δ / 2` until time `M`.
 -/
 lemma shadowing_precise
-    {ε δ : ℝ} (hδ : 0 < δ) (h''δ : δ ≤ δ₀ / 2) (x : ℤ → X)
+    {ε δ : ℝ} (hδ : 0 < δ) (h''δ : δ ≤ δ₁ / 4) (x : ℤ → X)
     (hx : ∀ n, dist (T (x n)) (x (n + 1)) ≤ ε) {M : ℕ} (hM : 2 * λ ^ M * δ ≤ reduceScale X δ)
     (hε : ∀ (u : ℕ → X), (∀ n, dist (T (u n)) (u (n + 1)) ≤ ε) →
       ∀ i ≤ M, dist (T^[i] (u 0)) (u i) ≤ reduceScale X δ / 2) :
     ∃ p, ∀ n, dist (x n) ((T ^ n) p) ≤ 4 * δ := by
-  sorry
+  have h'δ : δ ≤ δ₀ / 2 := by linarith [deltaOne_le_deltaZero (X := X)]
+  have A n : ∃ p, (∀ (i : ℕ), dist (x i) (T^[i] p) ≤ 4 * δ)
+      ∧ (∀ (i : ℕ), i ≤ n → dist (x (-i)) (T.symm^[i] p) ≤ 4 * δ) := by
+    rcases future_shadowing_precise hδ h'δ (ε := ε) (fun i ↦ x (i - n : ℤ))
+      (fun i ↦ by convert hx (i - n) using 3; omega) hM hε with ⟨q, -, hq⟩
+    refine ⟨T^[n] q, fun i ↦ ?_, fun i hi ↦ ?_⟩
+    · rw [← iterate_add_apply]
+      convert hq (i + n)
+      omega
+    · have L : Function.LeftInverse T.symm^[i] T^[i] := (Equiv.leftInverse_symm T).iterate _
+      have : n = i + (n - i) := by omega
+      rw [this, iterate_add_apply, L]
+      convert hq (n - i) using 3
+      omega
+
+
+
+
+
+#exit
+
 
 lemma shadowing {δ : ℝ} (hδ : 0 < δ) : ∃ ε > 0, ∀ (x : ℤ → X),
     (∀ n, dist (T (x n)) (x (n + 1)) ≤ ε) → ∃ p, ∀ n, dist (x n) ((T ^ n) p) ≤ 4 * δ := by
