@@ -29,7 +29,7 @@ open Function Set Filter Metric
 
 namespace SmaleSpace
 
-variable (X : Type*) [MetricSpace X] {U V : Set (X × X)} {a b c o s u x y z : X} {ε : ℝ}
+variable (X : Type*) [MetricSpace X] {U V : Set (X × X)} {a b c o s u x y z : X} {ε ε' δ : ℝ}
 
 /-! ### Spaces with a Ruelle bracket -/
 
@@ -63,6 +63,8 @@ instance [h : HasRuelleBracket X] : Bracket X X where
   bracket := h.toFun
 
 export HasRuelleBracket (deltaZero_pos)
+
+attribute [simp] deltaZero_pos
 
 local notation3 "δ₀" => HasRuelleBracket.deltaZero X
 
@@ -231,7 +233,7 @@ noncomputable def deltaOne : ℝ := reduceScale X δ₀
 
 local notation3 "δ₁" => deltaOne X
 
-lemma deltaOne_pos : 0 < δ₁ := reduceScale_pos deltaZero_pos
+@[simp] lemma deltaOne_pos : 0 < δ₁ := reduceScale_pos deltaZero_pos
 
 lemma deltaOne_le_half_deltaZero : δ₁ ≤ δ₀ / 2 := reduceScale_le_half_deltaZero
 
@@ -314,16 +316,45 @@ def locUnstable (ε : ℝ) (o : X) : Set X := {u | dist o u ≤ ε ∧ ⁅o, u�
 
 lemma dist_le_of_mem_locStable (hs : s ∈ locStable ε o) : dist o s ≤ ε := hs.1
 
+lemma dist_le_of_mem_locUnstable (hu : u ∈ locUnstable ε o) : dist o u ≤ ε := hu.1
+
 lemma bracket_eq_of_mem_locStable (hs : s ∈ locStable ε o) : ⁅s, o⁆ = s := hs.2
+
+lemma bracket_eq_of_mem_locUnstable (hu : u ∈ locUnstable ε o) : ⁅o, u⁆ = u := hu.2
 
 lemma locStable_eq (hε : ε ≤ δ₀) : locStable ε o = {s | dist o s ≤ ε ∧ ⁅o, s⁆ = o} := by
   ext s
-  have : dist o s = dist s o := PseudoMetricSpace.dist_comm o s
+  have : dist o s = dist s o := dist_comm o s
   simp only [locStable, mem_setOf_eq, and_congr_right_iff]
   intro h
   refine ⟨fun h' ↦ ?_, fun h' ↦ ?_⟩
   · rw [← h', bracket_right, bracket_self] <;> linarith
   · rw [← h', bracket_right, bracket_self] <;> linarith
+
+lemma locUnstable_eq (hε : ε ≤ δ₀) : locUnstable ε o = {u | dist o u ≤ ε ∧ ⁅u, o⁆ = o} :=
+  locStable_eq (X := invDyn X) hε
+
+lemma bracket_eq_of_mem_locStable' (hε : ε ≤ δ₀) (hs : s ∈ locStable ε o) : ⁅o, s⁆ = o := by
+  rw [locStable_eq hε] at hs
+  exact hs.2
+
+lemma bracket_eq_of_mem_locUnstable' (hε : ε ≤ δ₀) (hu : u ∈ locUnstable ε o) : ⁅u, o⁆ = o :=
+  bracket_eq_of_mem_locStable' (X := invDyn X) hε hu
+
+lemma mem_locStable_symm (hε : ε ≤ δ₀) (hx : x ∈ locStable ε o) : o ∈ locStable ε x := by
+  rw [locStable_eq hε] at hx
+  simpa [locStable, dist_comm] using hx
+
+lemma mem_locUnstable_symm (hε : ε ≤ δ₀) (hx : x ∈ locUnstable ε o) : o ∈ locUnstable ε x :=
+  mem_locStable_symm (X := invDyn X) hε hx
+
+lemma mem_locStable_iff_symm (hε : ε ≤ δ₀) :
+    x ∈ locStable ε o ↔ o ∈ locStable ε x :=
+  ⟨fun h ↦ mem_locStable_symm hε h, fun h ↦ mem_locStable_symm hε h⟩
+
+lemma mem_locUnstable_iff_symm (hε : ε ≤ δ₀) :
+    x ∈ locUnstable ε o ↔ o ∈ locUnstable ε x :=
+  mem_locStable_iff_symm (X := invDyn X) hε
 
 lemma bracket_mem_locStable [HasReduceScale X] (hx : dist o x ≤ reduceScale X ε) :
     ⁅x, o⁆ ∈ locStable ε o := by
@@ -336,9 +367,16 @@ lemma bracket_mem_locStable [HasReduceScale X] (hx : dist o x ≤ reduceScale X 
       apply hx.trans reduceScale_le_deltaZero
     · simp [deltaZero_pos.le]
 
+lemma bracket_mem_locUnstable [HasReduceScale X] (hx : dist o x ≤ reduceScale X ε) :
+    ⁅o, x⁆ ∈ locUnstable ε o :=
+  bracket_mem_locStable (X := invDyn X) hx
+
 lemma locStable_mono {ε ε' : ℝ} (h : ε ≤ ε') : locStable ε o ⊆ locStable ε' o := by
   simp only [locStable, setOf_subset_setOf, and_imp]
   grind
+
+lemma locUnstable_mono {ε ε' : ℝ} (h : ε ≤ ε') : locUnstable ε o ⊆ locUnstable ε' o :=
+  locStable_mono (X := invDyn X) h
 
 @[simp] lemma locStable_zero : locStable 0 o = {o} := by
   apply Subset.antisymm (fun y hy ↦ ?_) (fun y hy ↦ ?_)
@@ -347,9 +385,15 @@ lemma locStable_mono {ε ε' : ℝ} (h : ε ≤ ε') : locStable ε o ⊆ locSta
   · simp only [mem_singleton_iff] at hy
     simp [locStable, hy]
 
+@[simp] lemma locUnstable_zero : locUnstable 0 o = {o} :=
+  locStable_zero (X := invDyn X)
+
 lemma locStable_eq_empty_of_neg (hε : ε < 0) : locStable ε o = ∅ := by
   ext x
   simp [locStable, hε.trans_le (dist_nonneg (x := o) (y := x))]
+
+lemma locUnstable_eq_empty_of_neg (hε : ε < 0) : locUnstable ε o = ∅ :=
+  locStable_eq_empty_of_neg (X := invDyn X) hε
 
 lemma isClosed_locStable (hε : ε ≤ δ₀) : IsClosed (locStable ε o) := by
   have : ContinuousOn (fun x ↦ ⁅o, x⁆) (closedBall o ε) :=
@@ -358,28 +402,27 @@ lemma isClosed_locStable (hε : ε ≤ δ₀) : IsClosed (locStable ε o) := by
   ext y
   simp [locStable_eq hε, dist_comm]
 
-lemma dist_le_of_mem_locUnstable (hu : u ∈ locUnstable ε o) : dist o u ≤ ε := hu.1
-
-lemma bracket_eq_of_mem_locUnstable (hu : u ∈ locUnstable ε o) : ⁅o, u⁆ = u := hu.2
-
-lemma locUnstable_eq (hε : ε ≤ δ₀) : locUnstable ε o = {u | dist o u ≤ ε ∧ ⁅u, o⁆ = o} :=
-  locStable_eq (X := invDyn X) hε
-
-lemma bracket_mem_locUnstable [HasReduceScale X] (hx : dist o x ≤ reduceScale X ε) :
-    ⁅o, x⁆ ∈ locUnstable ε o :=
-  bracket_mem_locStable (X := invDyn X) hx
-
-lemma locUnstable_mono {ε ε' : ℝ} (h : ε ≤ ε') : locUnstable ε o ⊆ locUnstable ε' o :=
-  locStable_mono (X := invDyn X) h
-
-@[simp] lemma locUnstable_zero : locUnstable 0 o = {o} :=
-  locStable_zero (X := invDyn X)
-
-lemma locUnstable_eq_empty_of_neg (hε : ε < 0) : locUnstable ε o = ∅ :=
-  locStable_eq_empty_of_neg (X := invDyn X) hε
-
 lemma isClosed_locUnstable (hε : ε ≤ δ₀) : IsClosed (locUnstable ε o) :=
   isClosed_locStable (X := invDyn X) hε
+
+lemma mem_locStable_trans (hx : x ∈ locStable ε o) (hy : y ∈ locStable ε' x)
+    (hε : ε + ε' ≤ δ₀) : y ∈ locStable (ε + ε') o := by
+  have I : dist o y ≤ ε + ε' := by
+    apply (dist_triangle o x y).trans
+    linarith [hx.1, hy.1]
+  have : 0 ≤ ε' := le_trans (by positivity) hy.1
+  refine ⟨I, ?_⟩
+  rw [← bracket_eq_of_mem_locStable' ?_ hx, bracket_right]
+  · exact hy.2
+  · rw [dist_comm]
+    apply I.trans hε
+  · have := hx.1
+    linarith
+  · linarith
+
+lemma mem_locUnstable_trans (hx : x ∈ locUnstable ε o) (hy : y ∈ locUnstable ε' x)
+    (hε : ε + ε' ≤ δ₀) : y ∈ locUnstable (ε + ε') o :=
+  mem_locStable_trans (X := invDyn X) hx hy hε
 
 
 variable [HasReduceScale X]
