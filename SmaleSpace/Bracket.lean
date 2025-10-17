@@ -253,14 +253,21 @@ unstable one, or conversely. For this, we endow the type copy `invDyn X` with th
 and the reverse dynamics.
 -/
 
+/-- A type copy of a space. The intent is to endow this type copy with the reversed bracket and the
+reverse dynamics when `X` itself has a Ruelle bracket and a compatible hyperbolic map. -/
 def invDyn (X : Type*) : Type _ := X
 
+/-- The canonical map from the type synonym `invDyn X` from `X`. -/
 def ofInvDyn {X : Type*} (x : invDyn X) : X := x
 
+/-- The canonical map from `X` to the type synonym `invDyn X`. -/
 def toInvDyn {X : Type*} (x : X) : invDyn X := x
 
 instance : MetricSpace (invDyn X) := inferInstanceAs (MetricSpace X)
 
+/-- We endow the type synonym `invDyn X` with the reversed bracket `⁅x, y⁆' := ⁅y, x⁆`. This
+exchanges stable and unstable manifolds, and will be used to deduce results about unstable manifolds
+from results about stable manifolds. -/
 instance : HasRuelleBracket (invDyn X) where
   toFun x y := toInvDyn ⁅ofInvDyn y, ofInvDyn x⁆
   deltaZero := δ₀

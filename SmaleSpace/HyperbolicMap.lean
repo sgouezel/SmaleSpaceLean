@@ -1,11 +1,32 @@
 import SmaleSpace.Bracket
 
+/-!
+# Hyperbolic maps
+
+Consider a space with a Ruelle bracket. We introduce a map on such a space, compatible with the
+bracket: it respects the bracket, expands uniformly along local unstable manifolds, and
+contracts uniformly along local stable manifolds.
+
+This is introduced in the form of a typeclass `HasRuelleBracketWithMap X`, registering the bracket,
+the map (used as `T` through notation), and the compatibility conditions.
+
+We prove the shadowing lemma for such maps: the theorem `shadowing` shows that, given `δ > 0`,
+there exists `ε > 0` such that any `ε`-pseudoorbit is `δ`-close to a genuine orbit. We also give
+a more explicit version `shadowing_precise` giving explicit sufficient conditions for `ε`, which
+can be checked in a uniform way over families of maps.
+
+Many results have a time symmetry, between stable and unstable manifolds. To avoid proving them
+separately, we endow the type copy `invDyn X` with the reversed dynamics and the reversed bracket.
+With this device, results proved for stable manifolds are deduced for unstable manifolds by
+applying the former in `invDyn X`.
+-/
+
 open scoped Uniformity Topology
 open Function Set Filter Metric
 
 namespace SmaleSpace
 
-variable (X : Type*) [MetricSpace X] {U V : Set (X × X)} {a b c o s u x y z : X} {ε : ℝ} {n : ℕ}
+variable (X : Type*) [MetricSpace X] {U V : Set (X × X)} {a b c o s u x y z : X} {ε δ : ℝ} {n : ℕ}
 
 local notation3 "δ₀" => HasRuelleBracket.deltaZero X
 local notation3 "δ₁" => deltaOne X
@@ -173,7 +194,7 @@ lemma locUnstable_eq_dist_iter_le (hε : ε ≤ δ₁) :
 are exponentially close. -/
 lemma expansive_finite_time (h : ∀ i ≤ n, dist (T^[i] x) (T^[i] y) ≤ δ₁)
     (h' : ∀ i ≤ n, dist (T.symm^[i] x) (T.symm^[i] y) ≤ δ₁) :
-    dist x y ≤ 2 * λ^n * δ₀ := by
+    dist x y ≤ λ^n * (2 * δ₀) := by
   have : dist x ⁅y, x⁆ ≤ λ ^ n * δ₀ := (mem_locStable_lambda_pow_of_forall_dist_le h').1
   have : dist y ⁅y, x⁆ ≤ λ ^ n * δ₀ := by
     have : ∀ i ≤ n, dist (T^[i] y) (T^[i] x) ≤ δ₁ := by
@@ -186,7 +207,7 @@ lemma expansive_finite_time (h : ∀ i ≤ n, dist (T^[i] x) (T^[i] y) ≤ δ₁
 /-- If two points follow each other during time `n`, both in the past and in the future, then they
 are exponentially close. -/
 lemma expansive_finite_time' (h : ∀ (i : ℤ), i.natAbs ≤ n → dist ((T ^ i) x) ((T ^ i) y) ≤ δ₁) :
-    dist x y ≤ 2 * λ^n * δ₀ := by
+    dist x y ≤ λ^n * (2 * δ₀) := by
   apply expansive_finite_time
   · intro i hi
     exact h (i : ℤ) (by omega)
@@ -201,9 +222,9 @@ lemma expansive (h : ∀ i, dist (T^[i] x) (T^[i] y) ≤ δ₁)
     (h' : ∀ i, dist (T.symm^[i] x) (T.symm^[i] y) ≤ δ₁) : x = y := by
   apply eq_of_dist_eq_zero
   apply le_antisymm ?_ dist_nonneg
-  have : Tendsto (fun n ↦ 2 * λ ^ n * δ₀) atTop (𝓝 (2 * 0 * δ₀)) :=
-    ((tendsto_pow_atTop_nhds_zero_of_lt_one lambda_pos.le lambda_lt_one).const_mul _).mul_const _
-  rw [mul_zero, zero_mul] at this
+  have : Tendsto (fun n ↦ λ ^ n * (2 * δ₀)) atTop (𝓝 (0 * (2 * δ₀))) :=
+    ((tendsto_pow_atTop_nhds_zero_of_lt_one lambda_pos.le lambda_lt_one).mul_const _)
+  rw [zero_mul] at this
   apply ge_of_tendsto' this (fun n ↦ ?_)
   apply expansive_finite_time (fun i hi ↦ h i) (fun i hi ↦ h' i)
 
@@ -214,11 +235,6 @@ lemma expansive' (h : ∀ (i : ℤ), dist ((T ^ i) x) ((T ^ i) y) ≤ δ₁) : x
     simp only [Equiv.Perm.iterate_eq_pow, zpow_neg, zpow_natCast, DFunLike.coe_fn_eq]
     rfl
   convert h (-i : ℤ)
-
-
-
-
-
 
 /-- Given a positive parameter `δ`, an integer `n` and a uniformly continuous map `f`, one may find
 `ε > 0` such that any `ε`-pseudo-orbit does not deviate from a genuine orbit by more than `δ`
@@ -255,7 +271,7 @@ lemma exists_dist_image_iter_le_of_pseudoOrbit
 
 variable [CompleteSpace X]
 
---TODO: upstream
+-- PRed to mathlib in #30635. TODO: remove if this has been merged in mathlib.
 attribute [fun_prop] Continuous.iterate
 
 /-- Let `δ > 0`. Let `ε` be small enough compared to `δ`. Then any `ε`-pseudo-orbit in the future
@@ -268,7 +284,7 @@ Then, `ε` should be small enough that an `ε`-pseudo-orbit does not deviate fro
 by more than `reduceScale X δ / 2` until time `M`.
 -/
 lemma future_shadowing_precise
-    {ε δ : ℝ} (hδ : 0 < δ) (h''δ : δ ≤ δ₀ / 2) (x : ℕ → X)
+    (hδ : 0 < δ) (h''δ : δ ≤ δ₀ / 2) (x : ℕ → X)
     (hx : ∀ n, dist (T (x n)) (x (n + 1)) ≤ ε) {M : ℕ} (hM : 2 * λ ^ M * δ ≤ reduceScale X δ)
     (hε : ∀ (u : ℕ → X), (∀ n, dist (T (u n)) (u (n + 1)) ≤ ε) →
       ∀ i ≤ M, dist (T^[i] (u 0)) (u i) ≤ reduceScale X δ / 2) :
@@ -415,11 +431,11 @@ Then, `ε` should be small enough that an `ε`-pseudo-orbit does not deviate fro
 by more than `reduceScale X δ / 2` until time `M`.
 -/
 lemma shadowing_precise
-    {ε δ : ℝ} (hδ : 0 < δ) (h''δ : δ ≤ δ₁ / 4) (x : ℤ → X)
+    (hδ : 0 < δ) (h''δ : δ ≤ δ₁ / 8) (x : ℤ → X)
     (hx : ∀ n, dist (T (x n)) (x (n + 1)) ≤ ε) {M : ℕ} (hM : 2 * λ ^ M * δ ≤ reduceScale X δ)
     (hε : ∀ (u : ℕ → X), (∀ n, dist (T (u n)) (u (n + 1)) ≤ ε) →
       ∀ i ≤ M, dist (T^[i] (u 0)) (u i) ≤ reduceScale X δ / 2) :
-    ∃ p, ∀ n, dist (x n) ((T ^ n) p) ≤ 4 * δ := by
+    ∃ p, ∀ (n : ℕ), dist (x n) (T^[n] p) ≤ 4 * δ ∧ dist (x (-n)) (T.symm^[n] p) ≤ 4 * δ := by
   have h'δ : δ ≤ δ₀ / 2 := by linarith [deltaOne_le_deltaZero (X := X)]
   have A n : ∃ p, (∀ (i : ℕ), dist (x i) (T^[i] p) ≤ 4 * δ)
       ∧ (∀ (i : ℕ), i ≤ n → dist (x (-i)) (T.symm^[i] p) ≤ 4 * δ) := by
@@ -434,19 +450,69 @@ lemma shadowing_precise
       rw [this, iterate_add_apply, L]
       convert hq (n - i) using 3
       omega
+  choose p hp h'p using A
+  have B n : dist (p n) (p (n + 1)) ≤ λ ^ n * (2 * δ₀) := by
+    apply expansive_finite_time (fun i hi ↦ ?_) (fun i hi ↦ ?_)
+    · apply (dist_triangle_left _ _ (x i)).trans
+      linarith [hp n i, hp (n + 1) i]
+    · apply (dist_triangle_left _ _ (x (-i))).trans
+      linarith [h'p n i hi , h'p (n + 1) i (by omega)]
+  have : CauchySeq p := by
+    apply cauchySeq_of_le_geometric (λ) (2 * δ₀) lambda_lt_one (fun n ↦ ?_)
+    exact (B n).trans_eq (by ring)
+  obtain ⟨q, hq⟩ : ∃ q, Tendsto p atTop (𝓝 q) := cauchy_iff_exists_le_nhds.mp this
+  refine ⟨q, fun n ↦ ⟨?_, ?_⟩⟩
+  · have : ContinuousAt (T^[n]) q := by fun_prop
+    have := Tendsto.dist (tendsto_const_nhds (x := x n)) (Tendsto.comp this hq)
+    exact le_of_tendsto' this (fun i ↦ hp _ _)
+  · have : ContinuousAt (T.symm^[n]) q := by fun_prop
+    have := Tendsto.dist (tendsto_const_nhds (x := x (-n))) (Tendsto.comp this hq)
+    apply le_of_tendsto this
+    filter_upwards [Ici_mem_atTop n] with i hi using h'p _ _ hi
 
+/-- Let `δ > 0`. Let `ε` be small enough compared to `δ`. Then any `ε`-pseudo-orbit
+can be `4δ`-shadowed by a genuine orbit.
 
+We give the conditions on `ε` in explicit form, to make it possible to check them uniformly
+over families of maps. First, we fix `M` large enough so that `2 * λ ^ M * δ ≤ reduceScale X δ`.
+Then, `ε` should be small enough that an `ε`-pseudo-orbit does not deviate from a genuine orbit
+by more than `reduceScale X δ / 2` until time `M`.
+-/
+lemma shadowing_precise'
+    (hδ : 0 < δ) (h''δ : δ ≤ δ₁ / 8) (x : ℤ → X)
+    (hx : ∀ n, dist (T (x n)) (x (n + 1)) ≤ ε) {M : ℕ} (hM : 2 * λ ^ M * δ ≤ reduceScale X δ)
+    (hε : ∀ (u : ℕ → X), (∀ n, dist (T (u n)) (u (n + 1)) ≤ ε) →
+      ∀ i ≤ M, dist (T^[i] (u 0)) (u i) ≤ reduceScale X δ / 2) :
+    ∃ p, ∀ (n : ℤ), dist (x n) ((T ^ n) p) ≤ 4 * δ := by
+  rcases shadowing_precise hδ h''δ x hx hM hε with ⟨p, hp⟩
+  refine ⟨p, fun n ↦ ?_⟩
+  rcases Int.natAbs_eq n with hn | hn <;> set i := n.natAbs <;> rw [hn]
+  · apply (hp i).1
+  · convert (hp i).2
+    simp only [Equiv.Perm.iterate_eq_pow, zpow_neg, zpow_natCast, DFunLike.coe_fn_eq]
+    rfl
 
+/-- Let `δ > 0`. If `ε` is small enough, then any `ε`-pseudo-orbit can be `δ`-shadowed by a genuine
+orbit.
 
-
-#exit
-
-
-lemma shadowing {δ : ℝ} (hδ : 0 < δ) : ∃ ε > 0, ∀ (x : ℤ → X),
-    (∀ n, dist (T (x n)) (x (n + 1)) ≤ ε) → ∃ p, ∀ n, dist (x n) ((T ^ n) p) ≤ 4 * δ := by
-  let δ' := min δ (δ₀ / 2)
-  have : 0 < δ' := by
-    simp [δ', hδ]
-
+The statement is given here as an existential statement. For explicit sufficient conditions on `ε`,
+see `shadowing_precise'` (from which this one is derived). -/
+theorem shadowing (hδ : 0 < δ) : ∃ ε > 0, ∀ (x : ℤ → X),
+    (∀ n, dist (T (x n)) (x (n + 1)) ≤ ε) → ∃ p, ∀ n, dist (x n) ((T ^ n) p) ≤ δ := by
+  let δ' := min (δ / 4) (δ₁ / 8)
+  have : δ' ≤ δ / 4 := min_le_left _ _
+  have δ'_pos : 0 < δ' := by simp [δ', hδ]
+  obtain ⟨M, hM⟩ : ∃ M, 2 * λ ^ M * δ' < reduceScale X δ' := by
+    have : Tendsto (fun n ↦ 2 * λ ^ n * δ') atTop (𝓝 (2 * 0 * δ')) :=
+      ((tendsto_pow_atTop_nhds_zero_of_lt_one lambda_pos.le lambda_lt_one).const_mul _).mul_const _
+    rw [mul_zero, zero_mul] at this
+    exact ((tendsto_order.1 this).2 _ (reduceScale_pos (X := X) δ'_pos)).exists
+  obtain ⟨ε, εpos, hε⟩ : ∃ ε > 0, ∀ (u : ℕ → X), (∀ n, dist (T (u n)) (u (n + 1)) ≤ ε) →
+      ∀ i ≤ M, dist (T^[i] (u 0)) (u i) ≤ reduceScale X δ' / 2 := by
+    apply exists_dist_image_iter_le_of_pseudoOrbit unifCont_T
+    linarith [reduceScale_pos (X := X) δ'_pos]
+  refine ⟨ε, εpos, fun x hx ↦ ?_⟩
+  rcases shadowing_precise' δ'_pos (min_le_right _ _) x hx hM.le hε with ⟨p, hp⟩
+  refine ⟨p, fun n ↦ (hp n).trans (by linarith)⟩
 
 end SmaleSpace
