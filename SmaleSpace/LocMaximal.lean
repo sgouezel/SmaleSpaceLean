@@ -100,12 +100,11 @@ structure IsLocallyMaxHyperbolicSet (T : X ≃ X) (A : Set X) (δ₀ δ₁ : ℝ
   bracket : X → X → X
   bracket_eq_inter {x y : X} (hx : x ∈ A) (hy : y ∈ A) (h : dist x y ≤ δ₁) :
     locStable T δ₀ x ∩ locUnstable T δ₀ y = {bracket x y}
-  bracket_mem {x y : X} : bracket x y ∈ A
   uniformContinuousOn_bracket :
     UniformContinuousOn (uncurry bracket) {p : X × X | dist p.1 p.2 ≤ δ₀}
+  bracket_mem {x y : X} (hx : x ∈ A) (hy : y ∈ A) : bracket x y ∈ A
   mapsTo_T : MapsTo T A A
   mapsTo_Tsymm : MapsTo T.symm A A
-
 
 namespace IsLocallyMaxHyperbolicSet
 
