@@ -141,7 +141,7 @@ lemma exists_bracket_mem_entourage (hU : U ∈ 𝓤 X) :
     hU' (prodMk_mem_compRel (U'_symm this) hxy.1)⟩
 
 variable (X) in
-/-- If three points are close, then the first one is clsoe to the bracket of the other ones.
+/-- If three points are close, then the first one is close to the bracket of the other ones.
 Version in terms of distances. -/
 lemma exists_dist_bracket_lt (hε : 0 < ε) :
     ∃ ε' ∈ Ioc 0 ((min ε δ₀) / 2), ∀ x y z,

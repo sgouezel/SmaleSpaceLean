@@ -1,4 +1,4 @@
-import SmaleSpace.Bracket
+import SmaleSpace.Obsolete.Bracket
 
 /-!
 # Hyperbolic maps
