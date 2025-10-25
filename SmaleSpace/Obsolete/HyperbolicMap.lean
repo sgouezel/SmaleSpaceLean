@@ -1,4 +1,4 @@
-import SmaleSpace.Bracket
+import SmaleSpace.Obsolete.Bracket
 
 /-!
 # Hyperbolic maps
@@ -270,9 +270,6 @@ lemma exists_dist_image_iter_le_of_pseudoOrbit
     _ = δ := by linarith
 
 variable [CompleteSpace X]
-
--- PRed to mathlib in #30635. TODO: remove if this has been merged in mathlib.
-attribute [fun_prop] Continuous.iterate
 
 /-- Let `δ > 0`. Let `ε` be small enough compared to `δ`. Then any `ε`-pseudo-orbit in the future
 can be `4δ`-shadowed by a genuine orbit, starting from the `δ`-unstable manifold of the initial
