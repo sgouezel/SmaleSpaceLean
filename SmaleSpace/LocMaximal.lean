@@ -28,7 +28,7 @@ def locStable (T : X → X) (ε : ℝ) (o : X) : Set X :=
   {y | (∀ n, dist (T^[n] o) (T^[n] y) ≤ ε) ∧
     Tendsto (fun n ↦ dist (T^[n] o) (T^[n] y)) atTop (𝓝 0)}
 
-/-- The local stable manifold of a map `T`, of size `ε`, around a point `o`. This is the set of
+/-- The local unstable manifold of a map `T`, of size `ε`, around a point `o`. This is the set of
 points `y` whose orbit in the past remains within `ε` of the orbit of `o`, and the two orbits tend
 to each other asymptotically. Defined only when `T` is invertible. -/
 def locUnstable (T : X ≃ X) (ε : ℝ) (o : X) : Set X :=
