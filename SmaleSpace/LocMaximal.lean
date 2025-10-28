@@ -1,22 +1,7 @@
 import Mathlib
 
 open scoped Uniformity Topology
-open Function Set Filter Metric
-
-/- TODO: PR to Topology.MetricSpace.Pseudo.Defs next to uniformContinuous_iff -/
-theorem Metric.uniformContinuous_iff_le
-    {α β : Type*} [PseudoMetricSpace α] [PseudoMetricSpace β] {f : α → β} :
-    UniformContinuous f ↔ ∀ ε > 0, ∃ δ > 0, ∀ ⦃a b : α⦄, dist a b ≤ δ → dist (f a) (f b) ≤ ε :=
-  uniformity_basis_dist_le.uniformContinuous_iff uniformity_basis_dist_le
-
-/- TODO: PR to Topology.UniformSpace.Basic -/
-theorem UniformContinuousOn.congr
-    {α β : Type*} [UniformSpace α] [UniformSpace β] {f g : α → β} {s : Set α}
-    (hf : UniformContinuousOn f s) (h : EqOn f g s) :
-    UniformContinuousOn g s := by
-  apply hf.congr'
-  apply EventuallyEq.filter_mono _ inf_le_right
-  filter_upwards [mem_principal_self _] with ⟨a, b⟩ ⟨ha, hb⟩ using by simp [h ha, h hb]
+open Function Set Filter Metric SetRel
 
 variable {X : Type*} [MetricSpace X] {T' : X → X} {T : X ≃ X} {A B : Set X}
   {U V : Set (X × X)} {a b c o s u x y z : X} {ε ε' δ : ℝ} {n : ℕ}
@@ -356,12 +341,11 @@ lemma exists_bracket_mem_entourage (hU : U ∈ 𝓤 X) :
   have : (y, ⁅y, z⁆) ∈ U' := by
     have : (y, z) ∈ t₁ ∩ t₂ := by
       simp only [mem_principal] at ht₂
-      have : (y, z) ∈ V ○ V := prodMk_mem_compRel hxy.2 hxz.2
+      have : (y, z) ∈ V ○ V := prodMk_mem_comp hxy.2 hxz.2
       exact ⟨hV this, ht₂ ⟨hy, hz⟩⟩
     rw [← ht] at this
     exact this
-  exact ⟨hU' (prodMk_mem_compRel (U'_symm hxy.1) this),
-    hU' (prodMk_mem_compRel (U'_symm this) hxy.1)⟩
+  exact ⟨hU' (prodMk_mem_comp (U'_symm hxy.1) this), hU' (prodMk_mem_comp (U'_symm this) hxy.1)⟩
 
 /-- If three points are close, then the first one is close to the bracket of the other ones.
 Version in terms of distances. -/

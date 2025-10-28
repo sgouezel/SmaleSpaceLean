@@ -25,7 +25,7 @@ and the horizontal line through `q`.
 -/
 
 open scoped Uniformity Topology
-open Function Set Filter Metric
+open Function Set Filter Metric SetRel
 
 namespace SmaleSpace
 
@@ -135,10 +135,10 @@ lemma exists_bracket_mem_entourage (hU : U ∈ 𝓤 X) :
   refine ⟨U' ∩ V, inter_mem U'_mem V_mem, fun x y hxy ↦ ⟨U'_symm hxy.1, V_symm hxy.2⟩ ,
     fun x y z hxy hxz ↦ ?_⟩
   have : (y, ⁅y, z⁆) ∈ U' := by
-    have : (y, z) ∈ V ○ V := prodMk_mem_compRel hxy.2 hxz.2
+    have : (y, z) ∈ V ○ V := prodMk_mem_comp hxy.2 hxz.2
     exact hV this
-  exact ⟨hU' (prodMk_mem_compRel (U'_symm hxy.1) this),
-    hU' (prodMk_mem_compRel (U'_symm this) hxy.1)⟩
+  exact ⟨hU' (prodMk_mem_comp (U'_symm hxy.1) this),
+    hU' (prodMk_mem_comp (U'_symm this) hxy.1)⟩
 
 variable (X) in
 /-- If three points are close, then the first one is close to the bracket of the other ones.

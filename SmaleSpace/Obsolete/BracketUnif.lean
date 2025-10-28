@@ -30,7 +30,7 @@ to a design based on distances, and only keep this file for the record.
 -/
 
 open scoped Uniformity Topology
-open Function Set Filter
+open Function Set Filter SetRel
 
 namespace SmaleSpaceUniformityExperiment
 
@@ -123,10 +123,10 @@ lemma exists_bracket_mem (hU : U ∈ 𝓤 X) :
   refine ⟨U' ∩ V, inter_mem U'_mem V_mem, fun x y hxy ↦ ⟨U'_symm hxy.1, V_symm hxy.2⟩ ,
     fun x y z hxy hxz ↦ ?_⟩
   have : (y, ⁅y, z⁆) ∈ U' := by
-    have : (y, z) ∈ V ○ V := prodMk_mem_compRel hxy.2 hxz.2
+    have : (y, z) ∈ V ○ V := prodMk_mem_comp hxy.2 hxz.2
     exact hV this
-  exact ⟨hU' (prodMk_mem_compRel (U'_symm hxy.1) this),
-    hU' (prodMk_mem_compRel (U'_symm this) hxy.1)⟩
+  exact ⟨hU' (prodMk_mem_comp (U'_symm hxy.1) this),
+    hU' (prodMk_mem_comp (U'_symm this) hxy.1)⟩
 
 /-!
 ### Reducing entourages
@@ -193,7 +193,7 @@ lemma comp_mem_of_mem_bracketRoot
     simpa using ((exists_bracket_mem hU).choose_spec.2.2 _ _ _ hyx hxy).1
   simp only [bracketRoot, hU, ↓reduceDIte] at h h'
   have := (comp_symm_of_uniformity (exists_bracket_mem hU).choose_spec.1).choose_spec.2.2
-  apply this.trans hU'U (prodMk_mem_compRel h h')
+  apply this.trans hU'U (prodMk_mem_comp h h')
 
 /-!
 ### Small enough entourages
@@ -215,7 +215,7 @@ structure SmallEnough (U : Set (X × X)) : Prop where
 
 lemma SmallEnough.mono (hU : SmallEnough U) (h : V ⊆ U) : SmallEnough V where
   subset_mainEnt := h.trans hU.subset_mainEnt
-  comp_subset_mainEnt := (compRel_mono h h).trans hU.comp_subset_mainEnt
+  comp_subset_mainEnt := (comp_subset_comp h h).trans hU.comp_subset_mainEnt
   bracket_mem hyx hxz := hU.bracket_mem (h hyx) (h hxz)
 
 /-- Every set contained in a small entourage is small enough. -/
@@ -226,7 +226,7 @@ lemma eventually_smallEnough : ∀ᶠ U in (𝓤 X).smallSets, SmallEnough U := 
   refine ⟨U ∩ V, inter_mem U_mem V_mem, fun t ht ↦ ⟨by grind [subset_comp_self_of_mem_uniformity],
     ?_, by grind⟩⟩
   have : t ⊆ U := by grind
-  exact (compRel_mono this this).trans hU
+  exact (comp_subset_comp this this).trans hU
 
 /-!
 ### Local stable and unstable manifolds, local parametrization with product coordinates
@@ -296,9 +296,9 @@ def SmallEnough.localProductEquiv (hU : SmallEnough U) (o : X) : PartialEquiv (X
     · rwa [bracket_right, bracket_eq_of_mem_locUnstable hu]
       · apply mainEnt_symm
         exact hU.subset_mainEnt h's
-      · exact hU.comp_subset_mainEnt (prodMk_mem_compRel h's h'u)
+      · exact hU.comp_subset_mainEnt (prodMk_mem_comp h's h'u)
     · rwa [bracket_left, bracket_eq_of_mem_locStable hs]
-      · exact hU.comp_subset_mainEnt (prodMk_mem_compRel h's h'u)
+      · exact hU.comp_subset_mainEnt (prodMk_mem_comp h's h'u)
       · apply mainEnt_symm
         exact hU.subset_mainEnt h'u
   map_target' := by
@@ -313,14 +313,14 @@ def SmallEnough.localProductEquiv (hU : SmallEnough U) (o : X) : PartialEquiv (X
     constructor
     · rw [bracket_left]
       · exact bracket_eq_of_mem_locStable hs
-      · apply hU.comp_subset_mainEnt (prodMk_mem_compRel h's h'u)
+      · apply hU.comp_subset_mainEnt (prodMk_mem_comp h's h'u)
       · apply mainEnt_symm
         apply hU.subset_mainEnt h'u
     · rw [bracket_right]
       · exact bracket_eq_of_mem_locUnstable hu
       · apply mainEnt_symm
         apply hU.subset_mainEnt h's
-      · apply hU.comp_subset_mainEnt (prodMk_mem_compRel h's h'u)
+      · apply hU.comp_subset_mainEnt (prodMk_mem_comp h's h'u)
   right_inv' := by
     intro x ⟨hx, h'x, h''x⟩
     simp only
@@ -334,7 +334,7 @@ lemma SmallEnough.continuousOn_localProductEquiv (hU : SmallEnough U) :
     ContinuousOn (hU.localProductEquiv o) (hU.localProductEquiv o).source := by
   apply (continuousOn_bracket X).mono
   rintro ⟨s, u⟩ ⟨⟨hs, h's⟩, ⟨hu, h'u⟩⟩
-  exact hU.comp_subset_mainEnt (prodMk_mem_compRel hs hu)
+  exact hU.comp_subset_mainEnt (prodMk_mem_comp hs hu)
 
 lemma SmallEnough.continuousOn_symm_localProductEquiv (hU : SmallEnough U) :
     ContinuousOn (hU.localProductEquiv o).symm (hU.localProductEquiv o).target := by
