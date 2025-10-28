@@ -418,26 +418,10 @@ In this extended structure (compared to `IsLocallyMaxHyperbolicSet`), we also in
 `reduceScale` such that, if two points are within the smaller scale, then their brackets
 and their images under `T` are within the initial scale. This function is useful for stating
 technical estimates. Such a function always exists in a locally maximal hyperbolic set, see
-`IsLocallyMaxHyperbolicSet.extendDefault`.
+`IsLocallyMaxHyperbolicSet.extend`.
 -/
-
-structure _root_.IsExtLocallyMaxHyperbolicSet extends IsLocallyMaxHyperbolicSet T A where
-  /-- A smaller scale such that, if two points are within the smaller scale, then their brackets
-  and their images under `T` are within the initial scale. -/
-  reduceScale (ε : ℝ) : ℝ
-  reduceScale_mono : Monotone reduceScale
-  reduceScale_pos {ε : ℝ} (hε : 0 < ε) : 0 < reduceScale ε
-  reduceScale_le_half_self {ε : ℝ} : reduceScale ε ≤ ε / 2
-  reduceScale_le_half_deltaZero {ε : ℝ} : reduceScale ε ≤ deltaZero / 2
-  dist_bracket_le_of_le_reduceScale {ε : ℝ} {x y z : X} (hy : y ∈ A) (hz : z ∈ A)
-    (hxy : dist x y ≤ reduceScale ε) (hxz : dist x z ≤ reduceScale ε) :
-    dist x (bracket y z) ≤ ε
-  bracket_eq_inter {x y : X} (hx : x ∈ A) (hy : y ∈ A) (h : dist x y ≤ reduceScale deltaZero) :
-    {bracket x y} = locUnstable T deltaZero x ∩ locStable T deltaZero y
-  dist_image_le {ε : ℝ} (hε : ε ≤ deltaZero) {x y : X} (h : dist x y ≤ reduceScale ε) :
-    dist (T x) (T y) ≤ ε
-  dist_image_symm_le {ε : ℝ} (hε : ε ≤ deltaZero) {x y : X} (h : dist x y ≤ reduceScale ε) :
-    dist (T.symm x) (T.symm y) ≤ ε
+structure _root_.IsExtLocallyMaxHyperbolicSet extends IsLocallyMaxHyperbolicSet T A,
+    ReduceScaleStruct toIsLocallyMaxHyperbolicSet where
 
 /-- Given a locally maximal hyperbolic set, and a compatible scale-reducing function, construct
 the associated extended locally maximal hyperbolic set. -/
