@@ -1,32 +1,24 @@
 import SmaleSpace.LocMaximal
 import SmaleSpace.PiInt
 
-namespace SFT
+namespace SymbolicDynamics
 
 open PiInt Set Filter Set
 open scoped Topology
 
 variable {𝓐 : Type*} -- the alphabet
 
+
 /-!
-# Subshifts of finite type
-
-For a finite alphabet `𝓐`, and a subset `G` of `𝓐×𝓐`, consider the subtype of maps `x : ℤ → 𝓐`
-with `(x n, x (n+1)) ∈ G` for all `n`. It is endowed with the product topology. We think of `G`
-as the edges of a directed graph with vertex set `𝓐`, so `FST G` consists in bi-infinite
-paths in this graph.
+# Hyperbolic structure on the full shift
 -/
-/-- The subshift of finite type associated to an incidence matrix `G`. -/
-def FST (G : Set (𝓐 × 𝓐)) : Set (ℤ → 𝓐) := {x : ℤ → 𝓐 | ∀ n, (x n, x (n + 1)) ∈ G}
-
-variable {G : Set (𝓐 × 𝓐)}
 
 open scoped Classical in
 /-- The bracket for the shift, where `⁅x, y⁆` coincides with `x` on negative coordinates and `y` on
-positive coordinates. If `x 0 ≠ y 0`, we set `⁅x, y⁆ = x` as a junk value. -/
+positive coordinates. This gluing only makes sense if `x 0 = y 0`, notably in subshifts of finite
+type. If `x 0 ≠ y 0`, we set `⁅x, y⁆ = x` as a junk value. -/
 noncomputable def shiftBracket (x y : ℤ → 𝓐) (n : ℤ) : 𝓐 :=
-  if x 0 = y 0 then
-    (if n ≤ 0 then x n else y n)
+  if x 0 = y 0 then (if n ≤ 0 then x n else y n)
   else x n
 
 /-- The left shift on sequences indexed by `ℤ`, as an equivalence. -/
@@ -161,7 +153,7 @@ lemma locStable_shift_pow {x : ℤ → 𝓐} {n : ℕ} (hn : n ≠ 0) :
       exact dist_iterate_shift_le (fun i hi ↦ hy _ (by omega))
 
 lemma locStable_shift {x : ℤ → 𝓐} :
-    locStable shift (2⁻¹) x = {y | ∀ i ≥ 0, x i = y i} := by
+    locStable shift 2⁻¹ x = {y | ∀ i ≥ 0, x i = y i} := by
   rw [show (2⁻¹ : ℝ) = 2⁻¹ ^ 1 by simp, locStable_shift_pow one_ne_zero]
   rfl
 
@@ -226,7 +218,7 @@ lemma locUnstable_shift_pow {x : ℤ → 𝓐} {n : ℕ} (hn : n ≠ 0) :
       exact dist_iterate_shift_symm_le (fun i hi ↦ hy _ (by omega))
 
 lemma locUnstable_shift {x : ℤ → 𝓐} :
-    locUnstable shift (2⁻¹) x = {y | ∀ i ≤ 0, x i = y i} := by
+    locUnstable shift 2⁻¹ x = {y | ∀ i ≤ 0, x i = y i} := by
   rw [show (2⁻¹ : ℝ) = 2⁻¹ ^ 1 by simp, locUnstable_shift_pow one_ne_zero]
   grind
 
@@ -247,12 +239,12 @@ lemma shiftBracket_eq_locUnstable_inter_locStable {x y : ℤ → 𝓐} (h : dist
     grind
 
 /-- The full shift is a hyperbolic map. -/
-noncomputable def isLocallyMaxHyperbolicSet_shift :
+@[simps!] noncomputable def isLocallyMaxHyperbolicSet_shift :
     IsLocallyMaxHyperbolicSet (shift : (ℤ → 𝓐) ≃ (ℤ → 𝓐)) univ where
-  isClosed := isClosed_univ
   rho := 2⁻¹
   deltaZero := 2⁻¹
   bracket := shiftBracket
+  isClosed := isClosed_univ
   uniformContinuous := lipschitzWith_shift.uniformContinuous
   uniformContinuous_symm := lipschitzWith_shift_symm.uniformContinuous
   uniformContinuousOn_bracket := lipschitzWith_shiftBracket.uniformContinuous.uniformContinuousOn
@@ -268,4 +260,40 @@ noncomputable def isLocallyMaxHyperbolicSet_shift :
   exists_bracket_eq_inter :=
     ⟨2⁻¹, by norm_num, fun {x y} hx hy h ↦ shiftBracket_eq_locUnstable_inter_locStable h⟩
 
-end SFT
+/-!
+# Subshifts of finite type
+
+For a finite alphabet `𝓐`, and a subset `G` of `𝓐×𝓐`, consider the set of
+sequences `x : ℤ → 𝓐` with `(x n, x (n+1)) ∈ G` for all `n`. It is endowed with the product
+topology. We think of `G` as the edges of a directed graph with vertex set `𝓐`, so `FST G` consists
+in bi-infinite paths in this graph.
+-/
+/-- The subshift of finite type associated to an incidence matrix `G`. -/
+def SFT (G : Set (𝓐 × 𝓐)) : Set (ℤ → 𝓐) := {x : ℤ → 𝓐 | ∀ n, (x n, x (n + 1)) ∈ G}
+
+variable {G : Set (𝓐 × 𝓐)}
+
+/-- A subshift of finite type is a locally maximal hyperbolic set. -/
+noncomputable def isLocallyMaxHyperbolicSetSFT :
+    IsLocallyMaxHyperbolicSet shift (SFT G) := by
+  apply isLocallyMaxHyperbolicSet_shift.mono _ (subset_univ _)
+  · suffices IsClosed (⋂ n, {x : ℤ → 𝓐 | (x n, x (n + 1)) ∈ G}) by
+      convert this
+      ext x
+      simp [SFT]
+    exact isClosed_iInter (fun n ↦ (isClosed_discrete G).preimage (by fun_prop))
+  · intro x hx n
+    simpa using hx (n + 1)
+  · intro x hx n
+    simpa using hx (n - 1)
+  · intro x y hx hy n
+    simp only [isLocallyMaxHyperbolicSet_shift_bracket, shiftBracket]
+    by_cases h : x 0 = y 0; swap
+    · simpa [h] using hx n
+    simp only [h, ↓reduceIte]
+    rcases lt_trichotomy n 0 with hn | rfl | hn
+    · convert hx n <;> grind
+    · simpa [h] using hy 0
+    · convert hy n <;> grind
+
+end SymbolicDynamics

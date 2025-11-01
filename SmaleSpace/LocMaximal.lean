@@ -194,6 +194,31 @@ protected def symm : IsLocallyMaxHyperbolicSet T.symm A where
     rw [dist_comm] at h
     exact hδ hy hx h
 
+/-- If a closed subset of a locally maximal hyperbolic set is invariant by the dynamics and
+the bracket, it is also locally maximal hyperbolic. -/
+protected def mono (B : Set X) (hB : B ⊆ A) (hClosed : IsClosed B) (hmapsTo : MapsTo T B B)
+    (hmapsToSymm : MapsTo T.symm B B) (hbracket : ∀ x y, x ∈ B → y ∈ B → ⁅x, y⁆ ∈ B) :
+    IsLocallyMaxHyperbolicSet T B where
+  isClosed := hClosed
+  uniformContinuous := hT.uniformContinuous
+  uniformContinuous_symm := hT.uniformContinuous_symm
+  rho := hT.rho
+  rho_pos := hT.rho_pos
+  rho_lt_one := hT.rho_lt_one
+  deltaZero := hT.deltaZero
+  deltaZero_pos := hT.deltaZero_pos
+  contraction ho hx hy := hT.contraction (hB ho) hx hy
+  expansion ho hx hy := hT.expansion (hB ho) hx hy
+  bracket := hT.bracket
+  bracket_mem {x y} hx hy := hbracket x y hx hy
+  bracket_self := hT.bracket_self
+  uniformContinuousOn_bracket := hT.uniformContinuousOn_bracket.mono (by grind)
+  mapsTo := hmapsTo
+  mapsTo_symm := hmapsToSymm
+  exists_bracket_eq_inter := by
+    rcases hT.exists_bracket_eq_inter with ⟨δ, δpos, hδ⟩
+    exact ⟨δ, by grind⟩
+
 lemma continuous : Continuous T := hT.uniformContinuous.continuous
 
 lemma continuous_symm : Continuous T.symm := hT.uniformContinuous_symm.continuous
