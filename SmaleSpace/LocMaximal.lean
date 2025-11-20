@@ -449,7 +449,7 @@ noncomputable irreducible_def reduceScaleStructDefault : hT.ReduceScaleStruct :=
     rcases Metric.uniformContinuous_iff_le.1 hT.uniformContinuous ε hε with ⟨t, tpos, ht⟩
     rcases Metric.uniformContinuous_iff_le.1 hT.uniformContinuous_symm ε hε with ⟨t', t'pos, ht'⟩
     rcases hT.exists_dist_bracket_lt ε hε with ⟨t'', t''pos, ht''⟩
-    exact ⟨min t (min t' t''), by grind⟩
+    exact ⟨min t (min t' t''), by grind, by grind⟩
   choose! f1 hf1 h'f1 h''f1 h'''f1 using I
   have B (t : ℝ) (ht : 0 < t) : BddAbove (range (fun (x : Ioc 0 t) ↦ f1 x / 2)) := by
     refine ⟨t / 2 / 2, ?_⟩
