@@ -44,6 +44,14 @@ lemma locStable_mono (h : ε ≤ ε') : locStable T' ε o ⊆ locStable T' ε' o
 lemma locUnstable_mono (h : ε ≤ ε') : locUnstable T ε o ⊆ locUnstable T ε' o :=
   locStable_mono h
 
+lemma locStable_min : locStable T' (min ε ε') o = locStable T' ε o ∩ locStable T' ε' o := by
+  rcases le_total ε ε' with h | h
+  · simpa [h] using locStable_mono h
+  · simpa [h] using locStable_mono h
+
+lemma locUnstable_min : locUnstable T (min ε ε') o = locUnstable T ε o ∩ locUnstable T ε' o :=
+  locStable_min
+
 @[simp] lemma locStable_zero : locStable T' 0 o = {o} := by
   apply Subset.antisymm (fun y hy ↦ ?_) (fun y hy ↦ ?_)
   · simp [locStable, dist_le_zero, mem_setOf_eq] at hy
@@ -121,19 +129,22 @@ structure IsLocallyMaxHyperbolicSet (T : X ≃ X) (A : Set X) where
   isClosed : IsClosed A
   uniformContinuous : UniformContinuous T
   uniformContinuous_symm : UniformContinuous T.symm
-  /-- The contraction parameter along stable and unstable manifolds -/
+  /-- The dist_iterate_le parameter along stable and unstable manifolds -/
   rho : ℝ
   rho_pos : 0 < rho
   rho_lt_one : rho < 1
+  /-- Constant in front of the dist_iterate_le -/
+  C0 : ℝ
+  one_le_C0 : 1 ≤ C0
   /-- The size below which the dynamics is well behaved -/
   deltaZero : ℝ
   deltaZero_pos : 0 < deltaZero
-  contraction {o x y : X} (ho : o ∈ A)
-    (hx : x ∈ locStable T deltaZero o) (hy : y ∈ locStable T deltaZero o) :
-    dist (T x) (T y) ≤ rho * dist x y
-  expansion {o x y : X} (ho : o ∈ A)
-    (hx : x ∈ locUnstable T deltaZero o) (hy : y ∈ locUnstable T deltaZero o) :
-    dist (T.symm x) (T.symm y) ≤ rho * dist x y
+  dist_iterate_le {o x y : X} (ho : o ∈ A)
+    (hx : x ∈ locStable T deltaZero o) (hy : y ∈ locStable T deltaZero o) (n : ℕ) :
+    dist (T^[n] x) (T^[n] y) ≤ C0 * rho ^ n * dist x y
+  dist_iterate_symm_le {o x y : X} (ho : o ∈ A)
+    (hx : x ∈ locUnstable T deltaZero o) (hy : y ∈ locUnstable T deltaZero o) (n : ℕ) :
+    dist (T.symm^[n] x) (T.symm^[n] y) ≤ C0 * rho ^ n * dist x y
   /-- The Ruelle bracket of the hyperbolic map. Denoted as `⁅x, y⁆`. This is the intersection of the
   local unstable manifold of `x` and the local stable manifold of `y`. -/
   bracket : X → X → X
@@ -160,6 +171,7 @@ variable (hT : IsLocallyMaxHyperbolicSet T A)
 include hT
 
 local notation3 "δ₀" => hT.deltaZero
+local notation3 "C₀" => hT.C0
 local notation3 "ρ" => hT.rho
 local notation3 "⁅" x ", " y "⁆" => hT.bracket x y
 
@@ -171,10 +183,12 @@ protected def symm : IsLocallyMaxHyperbolicSet T.symm A where
   rho := hT.rho
   rho_pos := hT.rho_pos
   rho_lt_one := hT.rho_lt_one
+  C0 := hT.C0
+  one_le_C0 := hT.one_le_C0
   deltaZero := hT.deltaZero
   deltaZero_pos := hT.deltaZero_pos
-  contraction := hT.expansion
-  expansion := hT.contraction
+  dist_iterate_le := hT.dist_iterate_symm_le
+  dist_iterate_symm_le := hT.dist_iterate_le
   bracket x y := hT.bracket y x
   bracket_mem hx hy := hT.bracket_mem hy hx
   bracket_self := hT.bracket_self
@@ -205,10 +219,12 @@ protected def mono (B : Set X) (hB : B ⊆ A) (hClosed : IsClosed B) (hmapsTo : 
   rho := hT.rho
   rho_pos := hT.rho_pos
   rho_lt_one := hT.rho_lt_one
+  C0 := hT.C0
+  one_le_C0 := hT.one_le_C0
   deltaZero := hT.deltaZero
   deltaZero_pos := hT.deltaZero_pos
-  contraction ho hx hy := hT.contraction (hB ho) hx hy
-  expansion ho hx hy := hT.expansion (hB ho) hx hy
+  dist_iterate_le ho hx hy := hT.dist_iterate_le (hB ho) hx hy
+  dist_iterate_symm_le ho hx hy := hT.dist_iterate_symm_le (hB ho) hx hy
   bracket := hT.bracket
   bracket_mem {x y} hx hy := hbracket x y hx hy
   bracket_self := hT.bracket_self
@@ -223,90 +239,78 @@ lemma continuous : Continuous T := hT.uniformContinuous.continuous
 
 lemma continuous_symm : Continuous T.symm := hT.uniformContinuous_symm.continuous
 
-lemma dist_iterate_le (ho : o ∈ A)
-    (hx : x ∈ locStable T δ₀ o) (hy : y ∈ locStable T δ₀ o) (n : ℕ) :
-    dist (T^[n] x) (T^[n] y) ≤ ρ ^ n * dist x y := by
-  induction n with
-  | zero => simp
-  | succ n ih =>
-    simp only [iterate_succ_apply', pow_succ', mul_assoc]
-    apply (hT.contraction (hT.mapsTo.iterate _ ho) (iterate_mem_locStable hx _)
-      (iterate_mem_locStable hy _)).trans
-    gcongr
-    exact hT.rho_pos.le
-
-lemma dist_iterate_symm_le (ho : o ∈ A)
-    (hx : x ∈ locUnstable T δ₀ o) (hy : y ∈ locUnstable T δ₀ o) (n : ℕ) :
-    dist (T.symm^[n] x) (T.symm^[n] y) ≤ ρ ^ n * dist x y :=
-  hT.symm.dist_iterate_le ho hx hy n
-
-lemma image_mem_locStable_mul (ho : o ∈ A) (hε : ε ≤ δ₀) (hx : x ∈ locStable T ε o) :
-    T x ∈ locStable T (ρ * ε) (T o) := by
-  refine ⟨fun n ↦ ?_, ?_⟩
-  · have := image_mem_locStable hx
-    simp_rw [← iterate_succ_apply]
+lemma iterate_mem_locStable_mul (ho : o ∈ A) (hε : ε ≤ δ₀) (hx : x ∈ locStable T ε o) (n : ℕ) :
+    T^[n] x ∈ locStable T (C₀ * ρ ^ n * ε) (T^[n] o) := by
+  refine ⟨fun m ↦ ?_, ?_⟩
+  · have := iterate_mem_locStable hx m
+    simp_rw [← iterate_add_apply]
     apply (hT.dist_iterate_le ho _ _ _).trans
-    · gcongr
-      · exact hT.rho_pos.le
-      · exact pow_le_of_le_one hT.rho_pos.le hT.rho_lt_one.le (by omega)
+    · have := hT.one_le_C0
+      have := hT.rho_pos
+      gcongr 2
+      · exact pow_le_pow_of_le_one (by positivity) hT.rho_lt_one.le (by grind)
       · exact hx.1 0
     · exact self_mem_locStable hT.deltaZero_pos.le
     · exact locStable_mono hε hx
-  · simp_rw [← iterate_succ_apply]
-    exact hx.2.comp (tendsto_add_atTop_nat 1)
-
-lemma image_symm_mem_locUnstable_mul (ho : o ∈ A) (hε : ε ≤ δ₀) (hx : x ∈ locUnstable T ε o) :
-    T.symm x ∈ locUnstable T (ρ * ε) (T.symm o) :=
-  hT.symm.image_mem_locStable_mul ho hε hx
-
-lemma iterate_mem_locStable_mul (ho : o ∈ A) (hε : ε ≤ δ₀) (hx : x ∈ locStable T ε o) (n : ℕ) :
-    T^[n] x ∈ locStable T (ρ ^ n * ε) (T^[n] o) := by
-  induction n with
-  | zero => simp [hx]
-  | succ n ih =>
-    simp_rw [iterate_succ_apply', pow_succ', mul_assoc]
-    apply hT.image_mem_locStable_mul (hT.mapsTo.iterate _ ho) _ ih
-    apply le_trans _ hε
-    apply mul_le_of_le_one_left (nonempty_locStable_iff.1 ⟨x, hx⟩)
-    exact pow_le_one₀ hT.rho_pos.le hT.rho_lt_one.le
+  · simp_rw [← iterate_add_apply]
+    exact hx.2.comp (tendsto_add_atTop_nat n)
 
 lemma iterate_symm_mem_locUnstable_mul
     (ho : o ∈ A) (hε : ε ≤ δ₀) (hx : x ∈ locUnstable T ε o) (n : ℕ) :
-    T.symm^[n] x ∈ locUnstable T (ρ ^ n * ε) (T.symm^[n] o) :=
+    T.symm^[n] x ∈ locUnstable T (C₀ * ρ ^ n * ε) (T.symm^[n] o) :=
   hT.symm.iterate_mem_locStable_mul ho hε hx n
+
+lemma iterate_mem_locStable_min (ho : o ∈ A) (hε : ε ≤ δ₀) (hx : x ∈ locStable T ε o) (n : ℕ) :
+    T^[n] x ∈ locStable T (min (C₀ * ρ ^ n * ε) ε) (T^[n] o) := by
+  rw [locStable_min]
+  simp only [hT.iterate_mem_locStable_mul ho hε hx n, mem_inter_iff, true_and,
+    iterate_mem_locStable hx]
+
+lemma iterate_symm_mem_locUnstable_min (ho : o ∈ A) (hε : ε ≤ δ₀)
+    (hx : x ∈ locUnstable T ε o) (n : ℕ) :
+    T.symm^[n] x ∈ locUnstable T (min (C₀ * ρ ^ n * ε) ε) (T.symm^[n] o) :=
+  hT.symm.iterate_mem_locStable_min ho hε hx n
 
 lemma dist_iterate_le_mul_of_mem_locStable
     (ho : o ∈ A) (hε : ε ≤ δ₀) (hx : x ∈ locStable T ε o) (n : ℕ) :
-    dist (T^[n] o) (T^[n] x) ≤ ρ ^ n * ε :=
+    dist (T^[n] o) (T^[n] x) ≤ C₀ * ρ ^ n * ε :=
   (hT.iterate_mem_locStable_mul ho hε hx (n := n)).1 0
 
 lemma dist_iterate_symm_le_mul_of_mem_locUnstable
     (ho : o ∈ A) (hε : ε ≤ δ₀) (hx : x ∈ locUnstable T ε o) (n : ℕ) :
-    dist (T.symm^[n] o) (T.symm^[n] x) ≤ ρ ^ n * ε :=
+    dist (T.symm^[n] o) (T.symm^[n] x) ≤ C₀ * ρ ^ n * ε :=
   hT.symm.dist_iterate_le_mul_of_mem_locStable ho hε hx n
 
-lemma mem_locStable_iff_dist_iterate_le_mul (ho : o ∈ A) (hε : ε ≤ δ₀) :
-    x ∈ locStable T ε o ↔ (∀ n, dist (T^[n] o) (T^[n] x) ≤ ρ ^ n * ε) := by
-  refine ⟨fun hx n ↦ hT.dist_iterate_le_mul_of_mem_locStable ho hε hx n, fun hx ↦ ⟨fun n ↦ ?_, ?_⟩⟩
-  · apply (hx n).trans
-    have E : 0 ≤ ε := le_trans dist_nonneg (by simpa using (hx 0))
-    apply mul_le_of_le_one_left E
-    exact pow_le_one₀ hT.rho_pos.le hT.rho_lt_one.le
-  · have : Tendsto (fun n ↦ ρ ^ n * ε) atTop (𝓝 (0 * ε)) := by
-      apply Tendsto.mul_const
-      exact tendsto_pow_atTop_nhds_zero_of_lt_one hT.rho_pos.le hT.rho_lt_one
-    rw [zero_mul] at this
-    exact squeeze_zero (fun n ↦ dist_nonneg) hx this
+lemma dist_iterate_le_min_of_mem_locStable
+    (ho : o ∈ A) (hε : ε ≤ δ₀) (hx : x ∈ locStable T ε o) (n : ℕ) :
+    dist (T^[n] o) (T^[n] x) ≤ min (C₀ * ρ ^ n * ε) ε :=
+  (hT.iterate_mem_locStable_min ho hε hx (n := n)).1 0
 
-lemma mem_locUnstable_iff_dist_symm_iterate_le_mul (ho : o ∈ A) (hε : ε ≤ δ₀) :
-    x ∈ locUnstable T ε o ↔ (∀ n, dist (T.symm^[n] o) (T.symm^[n] x) ≤ ρ ^ n * ε) :=
-  hT.symm.mem_locStable_iff_dist_iterate_le_mul ho hε
+lemma dist_iterate_symm_le_min_of_mem_locUnstable
+    (ho : o ∈ A) (hε : ε ≤ δ₀) (hx : x ∈ locUnstable T ε o) (n : ℕ) :
+    dist (T.symm^[n] o) (T.symm^[n] x) ≤ min (C₀ * ρ ^ n * ε) ε :=
+  hT.symm.dist_iterate_le_min_of_mem_locStable ho hε hx n
+
+lemma mem_locStable_iff_dist_iterate_le_min (ho : o ∈ A) (hε : ε ≤ δ₀) :
+    x ∈ locStable T ε o ↔ (∀ n, dist (T^[n] o) (T^[n] x) ≤ min (C₀ * ρ ^ n * ε) ε) := by
+  refine ⟨fun hx n ↦ hT.dist_iterate_le_min_of_mem_locStable ho hε hx n,
+    fun hx ↦ ⟨fun n ↦ (hx n).trans (min_le_right _ _), ?_⟩⟩
+  have : Tendsto (fun n ↦ C₀ * ρ ^ n * ε) atTop (𝓝 (C₀ * 0 * ε)) := by
+    apply Tendsto.mul_const
+    apply Tendsto.const_mul
+    exact tendsto_pow_atTop_nhds_zero_of_lt_one hT.rho_pos.le hT.rho_lt_one
+  rw [mul_zero, zero_mul] at this
+  exact squeeze_zero (fun n ↦ dist_nonneg) (fun n ↦ (hx n).trans (min_le_left _ _)) this
+
+lemma mem_locUnstable_iff_dist_symm_iterate_le_min (ho : o ∈ A) (hε : ε ≤ δ₀) :
+    x ∈ locUnstable T ε o ↔ (∀ n, dist (T.symm^[n] o) (T.symm^[n] x) ≤ min (C₀ * ρ ^ n * ε) ε) :=
+  hT.symm.mem_locStable_iff_dist_iterate_le_min ho hε
 
 lemma mem_locStable_of_mem_locStable_of_dist_le (ho : o ∈ A) (hε : ε ≤ δ₀)
     (hx : x ∈ locStable T ε o) (h'x : dist o x ≤ ε') : x ∈ locStable T ε' o := by
   rcases le_total ε ε' with h | h
   · exact locStable_mono h hx
-  apply (hT.mem_locStable_iff_dist_iterate_le_mul ho (h.trans hε)).2 (fun n ↦ ?_)
+  apply (hT.mem_locStable_iff_dist_iterate_le_min ho (h.trans hε)).2 (fun n ↦ ?_)
   apply (hT.dist_iterate_le ho (x := o) (self_mem_locStable hT.deltaZero_pos.le)
     (locStable_mono hε hx) n).trans
   gcongr
@@ -317,8 +321,8 @@ lemma mem_locUnstable_of_mem_locUnstable_of_dist_le (ho : o ∈ A) (hε : ε ≤
   hT.symm.mem_locStable_of_mem_locStable_of_dist_le ho hε hx h'x
 
 lemma isClosed_locStable (ho : o ∈ A) (hε : ε ≤ δ₀) : IsClosed (locStable T ε o) := by
-  have : locStable T ε o = ⋂ n, {x | dist (T^[n] o) (T^[n] x) ≤ ρ ^ n * ε} := by
-    ext; simp [hT.mem_locStable_iff_dist_iterate_le_mul ho hε ]
+  have : locStable T ε o = ⋂ n, {x | dist (T^[n] o) (T^[n] x) ≤ min (C₀ * ρ ^ n * ε) ε} := by
+    ext; simp [hT.mem_locStable_iff_dist_iterate_le_min ho hε]
   rw [this]
   have : Continuous T := hT.continuous
   exact isClosed_iInter (fun n ↦ isClosed_le (by fun_prop) continuous_const)
@@ -392,7 +396,7 @@ lemma exists_dist_bracket_lt (ε : ℝ) (hε : 0 < ε) :
 points within the small scale have brackets and images which are controlled within the initial
 scale. We register the convenient properties of such a scale reducing function in the
 structure `ReduceScaleStruct`. Many fine properties of hyperbolic maps can be expressed in terms
-of such a function (for instance the constants in the shadowing lemma).
+of such a function (for instance the c0s in the shadowing lemma).
 Any locally maximal hyperbolic set admits a scale-reducing function, see `reduceScaleStructDefault`.
 -/
 structure ReduceScaleStruct where
@@ -591,6 +595,7 @@ variable {A : Set X} (hT : IsExtLocallyMaxHyperbolicSet T A)
 include hT
 
 local notation3 "δ₀" => hT.deltaZero
+local notation3 "C₀" => hT.C0
 local notation3 "ρ" => hT.rho
 local notation3 "⁅" x ", " y "⁆" => hT.bracket x y
 local notation3 "δ₁" => hT.reduceScale δ₀
@@ -693,7 +698,7 @@ lemma image_symm_bracket (hx : x ∈ A) (hy : y ∈ A) (h : dist x y ≤ δ₂) 
 components is exponentially small. -/
 lemma mem_locUnstable_mul_of_forall_dist_le (ho : o ∈ A) (hx : x ∈ A)
     (h'x : ∀ i ≤ n, dist (T^[i] o) (T^[i] x) ≤ δ₂) :
-    ⁅o, x⁆ ∈ locUnstable T (ρ ^ n * δ₁) o := by
+    ⁅o, x⁆ ∈ locUnstable T (C₀ * ρ ^ n * δ₁) o := by
   let y i := ⁅T^[i] o, T^[i] x⁆
   have B i (hi : i < n) : T (y i) = y (i + 1) := by
     simp only [y, iterate_succ_apply']
@@ -707,7 +712,7 @@ lemma mem_locUnstable_mul_of_forall_dist_le (ho : o ∈ A) (hx : x ∈ A)
     apply hT.bracket_mem_locUnstable (hT.mapsTo.iterate _ ho) (hT.mapsTo.iterate _ hx) _
       hT.deltaOne_le_deltaZero
     exact h'x n le_rfl
-  have : y 0 ∈ locUnstable T (ρ ^ n * δ₁) o := by
+  have : y 0 ∈ locUnstable T (C₀ * ρ ^ n * δ₁) o := by
     have L : Function.LeftInverse T.symm^[n] T^[n] := (Equiv.leftInverse_symm T).iterate _
     convert hT.iterate_symm_mem_locUnstable_mul (hT.mapsTo.iterate _ ho)
       hT.deltaOne_le_deltaZero C n
@@ -719,16 +724,16 @@ lemma mem_locUnstable_mul_of_forall_dist_le (ho : o ∈ A) (hx : x ∈ A)
 stable components is exponentially small. -/
 lemma mem_locStable_mul_of_forall_dist_le (ho : o ∈ A) (hx : x ∈ A)
     (h'x : ∀ i ≤ n, dist (T.symm^[i] o) (T.symm^[i] x) ≤ δ₂) :
-    ⁅x, o⁆ ∈ locStable T (ρ ^ n * δ₁) o :=
+    ⁅x, o⁆ ∈ locStable T (C₀ * ρ ^ n * δ₁) o :=
   hT.symm.mem_locUnstable_mul_of_forall_dist_le ho hx h'x
 
 /-- If two points follow each other during time `n`, both in the past and in the future, then they
 are exponentially close. -/
 lemma expansive_finite_time (hx : x ∈ A) (hy : y ∈ A) (h : ∀ i ≤ n, dist (T^[i] x) (T^[i] y) ≤ δ₂)
     (h' : ∀ i ≤ n, dist (T.symm^[i] x) (T.symm^[i] y) ≤ δ₂) :
-    dist x y ≤ ρ ^ n * (2 * δ₁) := by
-  have : dist x ⁅y, x⁆ ≤ ρ ^ n * δ₁ := (hT.mem_locStable_mul_of_forall_dist_le hx hy h').1 0
-  have : dist y ⁅y, x⁆ ≤ ρ ^ n * δ₁ := by
+    dist x y ≤ C₀ * ρ ^ n * (2 * δ₁) := by
+  have : dist x ⁅y, x⁆ ≤ C₀ * ρ ^ n * δ₁ := (hT.mem_locStable_mul_of_forall_dist_le hx hy h').1 0
+  have : dist y ⁅y, x⁆ ≤ C₀ * ρ ^ n * δ₁ := by
     have : ∀ i ≤ n, dist (T^[i] y) (T^[i] x) ≤ δ₂ := by
       intro i hi
       rw [dist_comm]
@@ -740,7 +745,7 @@ lemma expansive_finite_time (hx : x ∈ A) (hy : y ∈ A) (h : ∀ i ≤ n, dist
 are exponentially close. -/
 lemma expansive_finite_time' (hx : x ∈ A) (hy : y ∈ A)
     (h : ∀ (i : ℤ), i.natAbs ≤ n → dist ((T ^ i) x) ((T ^ i) y) ≤ δ₂) :
-    dist x y ≤ ρ^n * (2 * δ₁) := by
+    dist x y ≤ C₀ * ρ ^ n * (2 * δ₁) := by
   apply hT.expansive_finite_time hx hy
   · intro i hi
     exact h (i : ℤ) (by omega)
@@ -755,9 +760,9 @@ lemma expansive (hx : x ∈ A) (hy : y ∈ A) (h : ∀ i, dist (T^[i] x) (T^[i] 
     (h' : ∀ i, dist (T.symm^[i] x) (T.symm^[i] y) ≤ δ₂) : x = y := by
   apply eq_of_dist_eq_zero
   apply le_antisymm ?_ dist_nonneg
-  have : Tendsto (fun n ↦ ρ ^ n * (2 * δ₁)) atTop (𝓝 (0 * (2 * δ₁))) :=
-    ((tendsto_pow_atTop_nhds_zero_of_lt_one hT.rho_pos.le hT.rho_lt_one).mul_const _)
-  rw [zero_mul] at this
+  have : Tendsto (fun n ↦ C₀ * ρ ^ n * (2 * δ₁)) atTop (𝓝 (C₀ * 0 * (2 * δ₁))) :=
+    ((tendsto_pow_atTop_nhds_zero_of_lt_one hT.rho_pos.le hT.rho_lt_one).const_mul _).mul_const _
+  rw [mul_zero, zero_mul] at this
   apply ge_of_tendsto' this (fun n ↦ ?_)
   apply hT.expansive_finite_time hx hy (fun i hi ↦ h i) (fun i hi ↦ h' i)
 
@@ -795,22 +800,24 @@ protected noncomputable def inter
   rho := hA.rho
   rho_pos := hA.rho_pos
   rho_lt_one := hA.rho_lt_one
+  C0 := hA.C0
+  one_le_C0 := hA.one_le_C0
   deltaZero := min (hA.reduceScale (min hA.deltaZero hB.deltaZero))
     (hB.reduceScale (min hA.deltaZero hB.deltaZero))
   deltaZero_pos := by
     apply lt_min
     · apply hA.reduceScale_pos (lt_min hA.deltaZero_pos hB.deltaZero_pos)
     · apply hB.reduceScale_pos (lt_min hA.deltaZero_pos hB.deltaZero_pos)
-  contraction {o x y} ho hx hy := by
-    apply hA.contraction ho.1 (locStable_mono ?_ hx) (locStable_mono ?_ hy)
+  dist_iterate_le {o x y} ho hx hy := by
+    apply hA.dist_iterate_le ho.1 (locStable_mono ?_ hx) (locStable_mono ?_ hy)
     · apply (min_le_left _ _).trans
       apply (hA.reduceScale_le_self _).trans (min_le_left _ _)
       exact le_min hA.deltaZero_pos.le hB.deltaZero_pos.le
     · apply (min_le_left _ _).trans
       apply (hA.reduceScale_le_self _).trans (min_le_left _ _)
       exact le_min hA.deltaZero_pos.le hB.deltaZero_pos.le
-  expansion {o x y} ho hx hy := by
-    apply hA.expansion ho.1 (locStable_mono ?_ hx) (locStable_mono ?_ hy)
+  dist_iterate_symm_le {o x y} ho hx hy := by
+    apply hA.dist_iterate_symm_le ho.1 (locStable_mono ?_ hx) (locStable_mono ?_ hy)
     · apply (min_le_left _ _).trans
       apply (hA.reduceScale_le_self _).trans (min_le_left _ _)
       exact le_min hA.deltaZero_pos.le hB.deltaZero_pos.le
@@ -873,7 +880,7 @@ by more than `hT.reduceScale δ / 2` until time `M`.
 lemma future_shadowing_precise
     (hδ : 0 < δ) (h''δ : δ ≤ δ₀ / 2) (x : ℕ → X)
     (hx : ∀ n, dist (T (x n)) (x (n + 1)) ≤ ε) (h'x : ∀ n, x n ∈ A)
-    {M : ℕ} (hM : 2 * ρ ^ M * δ ≤ hT.reduceScale δ)
+    {M : ℕ} (hM : 2 * C₀ * ρ ^ M * δ ≤ hT.reduceScale δ)
     (hε : ∀ (u : ℕ → X), (∀ n, dist (T (u n)) (u (n + 1)) ≤ ε) →
       ∀ i ≤ M, dist (T^[i] (u 0)) (u i) ≤ hT.reduceScale δ / 2) :
     ∃ p ∈ locUnstable T δ (x 0) ∩ A, ∀ n, dist (x n) (T ^[n] p) ≤ 4 * δ := by
@@ -881,7 +888,7 @@ lemma future_shadowing_precise
   have : Nonempty X := ⟨x 0⟩
   have := hT.rho_pos
   have := hT.continuous
-  have rhoM : ρ ^ M ≤ 2⁻¹ := by
+  have rhoM : C₀ * ρ ^ M ≤ 2⁻¹ := by
     have W := hM.trans hT.reduceScale_le_half_self
     field_simp at W
     linarith
@@ -889,6 +896,7 @@ lemma future_shadowing_precise
     intro h
     simp only [h, pow_zero] at rhoM
     norm_num at rhoM
+    linarith [hT.one_le_C0]
   have h'δ : δ ≤ δ₀ := by linarith [hT.deltaZero_pos]
   have L n : Function.LeftInverse T.symm^[n] T^[n] := (Equiv.leftInverse_symm T).iterate _
   have L' n : Function.LeftInverse T^[n] T.symm^[n] := (Equiv.leftInverse_symm T.symm).iterate _
@@ -908,7 +916,7 @@ lemma future_shadowing_precise
     apply (dist_triangle_left _ _ (T^[M] (x (M * n)))).trans
     have : dist (T^[M] (x (M * n))) (x (M * (n + 1))) ≤ hT.reduceScale δ / 2 :=
       hε (fun k ↦ x (M * n + k)) (fun k ↦ hx (M * n + k)) M le_rfl
-    have : dist (T^[M] (x (M * n))) (T^[M] (y n)) ≤ ρ ^ M * δ :=
+    have : dist (T^[M] (x (M * n))) (T^[M] (y n)) ≤ C₀ * ρ ^ M * δ :=
       hT.dist_iterate_le_mul_of_mem_locStable (h'x _) h'δ hn M
     linarith
   have B n : y n ∈ locStable T δ (x (M * n)) ∩ A := by
