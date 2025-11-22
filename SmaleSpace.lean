@@ -5,3 +5,5 @@ import SmaleSpace.Obsolete.HyperbolicMap
 import SmaleSpace.NonWandering
 import SmaleSpace.PiInt
 import SmaleSpace.SFT
+import SmaleSpace.Shadowing
+import SmaleSpace.SpectralDecomposition
