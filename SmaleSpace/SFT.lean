@@ -251,8 +251,12 @@ lemma shiftBracket_eq_locUnstable_inter_locStable {x y : ℤ → 𝓐} (h : dist
   rho_pos := by norm_num
   rho_lt_one := by norm_num
   deltaZero_pos := by norm_num
-  contraction ho hx hy := dist_shift_le (fun i hi ↦ by grind [locStable_shift])
-  expansion ho hx hy := dist_shift_symm_le (fun i hi ↦ by grind [locUnstable_shift])
+  C0 := 1
+  one_le_C0 := le_rfl
+  dist_iterate_le ho hx hy n := by
+    simpa using dist_iterate_shift_le (fun i hi ↦ by grind [locStable_shift])
+  dist_iterate_symm_le ho hx hy n := by
+    simpa using dist_iterate_shift_symm_le (fun i hi ↦ by grind [locUnstable_shift])
   bracket_mem hx hy := mem_univ _
   bracket_self {x} := by ext; simp [shiftBracket]
   mapsTo := mapsTo_univ _ _
