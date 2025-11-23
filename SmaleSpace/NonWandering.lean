@@ -34,7 +34,7 @@ lemma nonWonderingSetWithin_empty : nonWanderingSetWithin T ∅ = ∅ := by
     exists_false, imp_false, Set.mem_setOf_eq, iff_false, not_forall, not_not]
   exact ⟨univ, by simp⟩
 
-lemma isClosed_nonWanderingSetWithin (T : X → X) (A : Set X) :
+lemma isClosed_nonWanderingSetWithin :
     IsClosed (nonWanderingSetWithin T A) := by
   apply isClosed_iff_nhds.2 (fun x hx ↦ ?_)
   intro U hU
@@ -42,13 +42,18 @@ lemma isClosed_nonWanderingSetWithin (T : X → X) (A : Set X) :
   simp only [nonWanderingSetWithin, Set.mem_inter_iff, gt_iff_lt, Set.mem_setOf_eq] at hy
   grind
 
-lemma periodicPts_subset_nonWanderingSetWithin :
+lemma periodicPts_inter_subset_nonWanderingSetWithin :
     periodicPts T ∩ A ⊆ nonWanderingSetWithin T A := by
   rintro x ⟨⟨n, npos, hn⟩, hA⟩ U hU
   refine ⟨x, ⟨hA, mem_of_mem_nhds hU⟩, n, npos, ?_⟩
   simp only [IsPeriodicPt, IsFixedPt] at hn
   rw [hn]
   exact mem_of_mem_nhds hU
+
+lemma closure_periodicPts_inter_subset_nonWanderingSetWithin :
+    closure (periodicPts T ∩ A) ⊆ nonWanderingSetWithin T A := by
+  rw [← isClosed_nonWanderingSetWithin.closure_eq]
+  exact closure_mono periodicPts_inter_subset_nonWanderingSetWithin
 
 /-- If a point is nonwandering, one can find nearby points that return arbitrarily close in
 arbitrarily large times. -/
