@@ -131,7 +131,6 @@ stable and unstable manifolds of size `δ₀` intersect at exactly one point. As
 plays a prominent role in the theory, we include it as data in the definition, the
 function `bracket` (sometimes called the Ruelle bracket).
 -/
-
 structure IsLocallyMaxHyperbolicSet (T : X ≃ X) (A : Set X) where
   isClosed : IsClosed A
   uniformContinuous : UniformContinuous T

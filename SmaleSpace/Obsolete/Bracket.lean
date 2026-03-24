@@ -184,6 +184,7 @@ class HasReduceScale where
 /-- A possible construction of an arbitrary reducing scale function, based on
 continuity and choice. Not registered as an instance as one may want to use more explicit
 instances in specific situations. -/
+@[implicit_reducible]
 noncomputable def hasReduceScaleDefault : HasReduceScale X where
   reduceScale (ε : ℝ) : ℝ :=
     if hε : 0 < ε then (exists_dist_bracket_lt X hε).choose

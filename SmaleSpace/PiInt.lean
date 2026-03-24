@@ -183,6 +183,7 @@ local instances in this section.
 open Classical in
 /-- The distance function on a product space `Π n, E n`, given by `dist x y = (1/2)^n` where `n` is
 the first index at which `x` and `y` differ. -/
+@[implicit_reducible]
 protected def dist : Dist (Π n, E n) :=
   ⟨fun x y => if x ≠ y then (2⁻¹ : ℝ) ^ firstDiff x y else 0⟩
 
@@ -345,6 +346,7 @@ Warning: this definition makes sure that the topology is defeq to the original p
 but it does not take care of a possible uniformity. If the `E n` have a uniform structure, then
 there will be two non-defeq uniform structures on `Π n, E n`, the product one and the one coming
 from the metric structure. In this case, use `metricSpaceOfDiscreteUniformity` instead. -/
+@[implicit_reducible]
 protected def metricSpace : MetricSpace (Π n, E n) :=
   MetricSpace.ofDistTopology dist PiInt.dist_self PiInt.dist_comm PiInt.dist_triangle
     isOpen_iff_dist PiInt.eq_of_dist_eq_zero
@@ -352,6 +354,7 @@ protected def metricSpace : MetricSpace (Π n, E n) :=
 /-- Metric space structure on `Π (n : ℤ), E n` when the spaces `E n` have the discrete uniformity,
 where the distance is given by `dist x y = (1/2)^n`, where `n` is the smallest index where `x` and
 `y` differ. Not registered as a global instance by default. -/
+@[implicit_reducible]
 protected def metricSpaceOfDiscreteUniformity {E : ℤ → Type*} [∀ n, UniformSpace (E n)]
     (h : ∀ n, uniformity (E n) = 𝓟 SetRel.id) : MetricSpace (Π n, E n) :=
   haveI : ∀ n, DiscreteTopology (E n) := fun n => discreteTopology_of_discrete_uniformity (h n)
