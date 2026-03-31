@@ -84,7 +84,7 @@ lemma mem_nonWanderingSetWithin_iff_frequently_atTop [T2Space X] (hT : Continuou
   /- Assume now that `x` is not periodic. Considering neighborhoods separating `x` and `T^n x`,
   we construct a neighborhood `U'` of `x` which does not return to itself during the first `N`
   iterates. Then any point in `U'` returning close to `x` has to do so in more than `N` iterates. -/
-  push_neg at hx
+  push Not at hx
   have A (n : ℕ) (hn : 0 < n) : ∃ V W, V ∈ 𝓝 x ∧ W ∈ 𝓝 (T^[n] x) ∧ Disjoint V W :=
     t2_separation_nhds (hx n hn).symm
   choose! V W hV hW hVW using A
