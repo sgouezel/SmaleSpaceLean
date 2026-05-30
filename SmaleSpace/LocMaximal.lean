@@ -1,4 +1,11 @@
+/-
+Copyright (c) 2026 Sébastien Gouëzel. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Sébastien Gouëzel
+-/
 import Mathlib
+
+/-! # Locally maximal sets for hyperbolic dynamics -/
 
 open scoped Uniformity Topology
 open Function Set Filter Metric SetRel
@@ -455,7 +462,7 @@ structure _root_.IsExtLocallyMaxHyperbolicSet extends IsLocallyMaxHyperbolicSet 
 
 /-- Given a locally maximal hyperbolic set, and a compatible scale-reducing function, construct
 the associated extended locally maximal hyperbolic set. -/
-def extend_of_reduceScaleStruct (hR : hT.ReduceScaleStruct) : IsExtLocallyMaxHyperbolicSet T A where
+def extendOfReduceScaleStruct (hR : hT.ReduceScaleStruct) : IsExtLocallyMaxHyperbolicSet T A where
   __ := hT
   __ := hR
 
@@ -527,7 +534,6 @@ noncomputable irreducible_def reduceScaleStructDefault : hT.ReduceScaleStruct :=
     left
     have : Nonempty (Ioc 0 ε) := ⟨⟨ε, ⟨by linarith, le_rfl⟩⟩⟩
     apply ciSup_le (f := fun (t : Ioc 0 ε) ↦ f1 t / 2) (fun x ↦ ?_)
-    simp only
     gcongr
     apply (hf1 x x.2.1).2.trans
     apply (half_le_self (le_min x.2.1.le hT.deltaZero_pos.le)).trans
@@ -612,7 +618,7 @@ noncomputable irreducible_def reduceScaleStructDefault : hT.ReduceScaleStruct :=
 /-- Endowing a locally maximal hyperbolic set with some (arbitrary) good scale-reduction
 function. -/
 noncomputable def extend : IsExtLocallyMaxHyperbolicSet T A :=
-  hT.extend_of_reduceScaleStruct hT.reduceScaleStructDefault
+  hT.extendOfReduceScaleStruct hT.reduceScaleStructDefault
 
 end IsLocallyMaxHyperbolicSet
 
@@ -674,8 +680,9 @@ lemma bracket_mem_locStable
 
 lemma bracket_mem_locUnstable
     (hx : x ∈ A) (hy : y ∈ A) (h : dist x y ≤ hT.reduceScale ε) (hε : ε ≤ δ₀) :
-    ⁅x, y⁆ ∈ locUnstable T ε x :=
-  hT.symm.bracket_mem_locStable hy hx (by simpa [dist_comm] using h) hε
+    ⁅x, y⁆ ∈ locUnstable T ε x := by
+  rw [dist_comm] at h
+  exact hT.symm.bracket_mem_locStable hy hx h hε
 
 lemma bracket_eq_inter_of_le
     (hx : x ∈ A) (hy : y ∈ A) (h : dist x y ≤ hT.reduceScale ε) (hε : ε ≤ δ₀) :
@@ -718,8 +725,9 @@ lemma image_bracket (hx : x ∈ A) (hy : y ∈ A) (h : dist x y ≤ δ₂) : T �
     exact h.trans (hT.reduceScale_le_self hT.deltaOne_pos.le)
 
 lemma image_symm_bracket (hx : x ∈ A) (hy : y ∈ A) (h : dist x y ≤ δ₂) :
-    T.symm ⁅x, y⁆ = ⁅T.symm x, T.symm y⁆ :=
-  hT.symm.image_bracket hy hx (by simpa [dist_comm] using h)
+    T.symm ⁅x, y⁆ = ⁅T.symm x, T.symm y⁆ := by
+  rw [dist_comm] at h
+  exact hT.symm.image_bracket hy hx h
 
 /-- If two points follow each other during time `n`, then the difference between their unstable
 components is exponentially small. -/

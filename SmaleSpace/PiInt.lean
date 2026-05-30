@@ -67,7 +67,7 @@ theorem apply_nat_eq_of_lt_firstDiff {x y : Π n, E n} {n : ℕ} (hn : n < first
   split_ifs at hn with h
   · have := Nat.find_min h hn
     grind
-  · exact (not_lt_zero' hn).elim
+  · exact (not_lt_zero hn).elim
 
 theorem apply_neg_eq_of_lt_firstDiff {x y : Π n, E n} {n : ℕ} (hn : n < firstDiff x y) :
     x (-n) = y (-n) := by
@@ -76,7 +76,7 @@ theorem apply_neg_eq_of_lt_firstDiff {x y : Π n, E n} {n : ℕ} (hn : n < first
   split_ifs at hn with h
   · have := Nat.find_min h hn
     grind
-  · exact (not_lt_zero' hn).elim
+  · exact (not_lt_zero hn).elim
 
 theorem apply_eq {x y : Π n, E n} {i : ℤ} (h : (-firstDiff x y : ℤ) < i) (h' : i < firstDiff x y) :
     x i = y i := by

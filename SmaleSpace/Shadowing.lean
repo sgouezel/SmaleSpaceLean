@@ -1,4 +1,11 @@
+/-
+Copyright (c) 2026 Sébastien Gouëzel. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Sébastien Gouëzel
+-/
 import SmaleSpace.LocMaximal
+
+/-! # The shadowing and closing lemmas for hyperbolic dynamics -/
 
 open scoped Uniformity Topology
 open Function Set Filter Metric SetRel
@@ -353,7 +360,8 @@ theorem closing (hT : IsLocallyMaxHyperbolicSet T A) (hδ : 0 < δ) :
   refine ⟨y, yA, (hy 0).trans (min_le_left _ _), ?_⟩
   apply hδ₁ _ (hT.mapsTo.iterate _ yA) _ yA (fun k ↦ ?_)
   calc dist ((T ^ k) (T^[n] y)) ((T ^ k) y)
-  _ = dist ((T ^ (k + n)) y) ((T ^ k) y) := by simp [zpow_add]
+  _ = dist ((T ^ (k + n)) y) ((T ^ k) y) := by
+    simp only [zpow_add, zpow_natCast, Equiv.Perm.coe_mul, comp_apply]; rfl
   _ ≤ dist (u k) ((T ^ (k + n)) y) + dist (u k) ((T ^ k) y) := dist_triangle_left _ _ _
   _ = dist (u (k + n)) ((T ^ (k + n)) y) + dist (u k) ((T ^ k) y) := by simp [u]
   _ ≤ δ₁ / 2 + δ₁ / 2 := by gcongr <;> exact (hy _).trans (min_le_right _ _)

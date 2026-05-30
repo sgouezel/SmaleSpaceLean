@@ -1,5 +1,13 @@
+/-
+Copyright (c) 2026 Sébastien Gouëzel. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Sébastien Gouëzel
+-/
 import SmaleSpace.LocMaximal
 import SmaleSpace.PiInt
+
+/-! # Subshifts of finite type
+-/
 
 namespace SymbolicDynamics
 
@@ -239,7 +247,7 @@ lemma shiftBracket_eq_locUnstable_inter_locStable {x y : ℤ → 𝓐} (h : dist
     grind
 
 /-- The full shift is a hyperbolic map. -/
-@[simps!] noncomputable def isLocallyMaxHyperbolicSet_shift :
+@[simps!] noncomputable def isLocallyMaxHyperbolicSetShift :
     IsLocallyMaxHyperbolicSet (shift : (ℤ → 𝓐) ≃ (ℤ → 𝓐)) univ where
   rho := 2⁻¹
   deltaZero := 2⁻¹
@@ -269,7 +277,7 @@ lemma shiftBracket_eq_locUnstable_inter_locStable {x y : ℤ → 𝓐} (h : dist
 
 For a finite alphabet `𝓐`, and a subset `G` of `𝓐×𝓐`, consider the set of
 sequences `x : ℤ → 𝓐` with `(x n, x (n+1)) ∈ G` for all `n`. It is endowed with the product
-topology. We think of `G` as the edges of a directed graph with vertex set `𝓐`, so `FST G` consists
+topology. We think of `G` as the edges of a directed graph with vertex set `𝓐`, so `SFT G` consists
 in bi-infinite paths in this graph.
 -/
 /-- The subshift of finite type associated to an incidence matrix `G`. -/
@@ -280,7 +288,7 @@ variable {G : Set (𝓐 × 𝓐)}
 /-- A subshift of finite type is a locally maximal hyperbolic set. -/
 noncomputable def isLocallyMaxHyperbolicSetSFT :
     IsLocallyMaxHyperbolicSet shift (SFT G) := by
-  apply isLocallyMaxHyperbolicSet_shift.mono _ (subset_univ _)
+  apply isLocallyMaxHyperbolicSetShift.mono _ (subset_univ _)
   · suffices IsClosed (⋂ n, {x : ℤ → 𝓐 | (x n, x (n + 1)) ∈ G}) by
       convert this
       ext x
@@ -291,7 +299,7 @@ noncomputable def isLocallyMaxHyperbolicSetSFT :
   · intro x hx n
     simpa using hx (n - 1)
   · intro x y hx hy n
-    simp only [isLocallyMaxHyperbolicSet_shift_bracket, shiftBracket]
+    simp only [isLocallyMaxHyperbolicSetShift_bracket, shiftBracket]
     by_cases h : x 0 = y 0; swap
     · simpa [h] using hx n
     simp only [h, ↓reduceIte]

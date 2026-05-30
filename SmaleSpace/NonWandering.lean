@@ -1,4 +1,11 @@
+/-
+Copyright (c) 2026 Sébastien Gouëzel. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Sébastien Gouëzel
+-/
 import Mathlib
+
+/-! # The non wandering set of a dynamical system -/
 
 open scoped Topology
 open Function Set Filter
