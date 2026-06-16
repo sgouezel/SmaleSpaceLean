@@ -345,7 +345,7 @@ lemma future_shadowing_precise
   the stable manifold of `yᵢ` of size `δ`. -/
   let z i n := T.symm^[M * n] (y (i + n))
   have Z i n : z i (n + 1) ∈ locUnstable (λ ^ (M * (n + 1)) * δ) (z i n) := by
-    convert image_iter_mem_locUnstable h'δ (C (i + n)) (n := M * (n + 1)) using 2
+    convert! image_iter_mem_locUnstable h'δ (C (i + n)) (n := M * (n + 1)) using 2
     rw [mul_add, iterate_add_apply, mul_one, L]
   have Z' i n : z i (n + 1) ∈ locUnstable (2⁻¹ ^ (n + 1) * δ) (z i n) := by
     apply locUnstable_mono _ (Z i n)

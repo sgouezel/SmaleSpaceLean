@@ -103,7 +103,7 @@ lemma future_shadowing_precise
   the stable manifold of `yᵢ` of size `δ`. -/
   let z i n := T.symm^[M * n] (y (i + n))
   have Z i n : z i (n + 1) ∈ locUnstable T (C₀ * ρ ^ (M * (n + 1)) * δ) (z i n) := by
-    convert hT.iterate_symm_mem_locUnstable_mul (hT.mapsTo.iterate _ (B _).2) h'δ (C (i + n))
+    convert! hT.iterate_symm_mem_locUnstable_mul (hT.mapsTo.iterate _ (B _).2) h'δ (C (i + n))
       (n := M * (n + 1)) using 2
     rw [mul_add, iterate_add_apply, mul_one, L]
   have Z' i n : z i (n + 1) ∈ locUnstable T (2⁻¹ ^ (n + 1) * δ) (z i n) := by
@@ -345,7 +345,7 @@ theorem closing (hT : IsLocallyMaxHyperbolicSet T A) (hδ : 0 < δ) :
     · have : (k + 1) % n = 0 := by rw [Int.add_emod, h, one_mod]; simp
       simp only [this, Int.pred_toNat, Int.toNat_natCast, h, Int.toNat_zero, ge_iff_le, u,
         ← iterate_succ_apply' T]
-      convert h'x
+      convert! h'x
       omega
     · have I : 0 ≤ k % n := Int.emod_nonneg k (by omega)
       have : (k + 1) % n = k % n + 1 := by

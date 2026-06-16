@@ -290,7 +290,7 @@ noncomputable def isLocallyMaxHyperbolicSetSFT :
     IsLocallyMaxHyperbolicSet shift (SFT G) := by
   apply isLocallyMaxHyperbolicSetShift.mono _ (subset_univ _)
   · suffices IsClosed (⋂ n, {x : ℤ → 𝓐 | (x n, x (n + 1)) ∈ G}) by
-      convert this
+      convert! this
       ext x
       simp [SFT]
     exact isClosed_iInter (fun n ↦ (isClosed_discrete G).preimage (by fun_prop))
