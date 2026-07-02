@@ -436,9 +436,9 @@ structure ReduceScaleStruct where
     dist x ⁅y, z⁆ ≤ ε / C₀
   bracket_eq_inter {x y : X} (hx : x ∈ A) (hy : y ∈ A) (h : dist x y ≤ reduceScale δ₀) :
     {⁅x, y⁆} = locUnstable T δ₀ x ∩ locStable T δ₀ y
-  dist_image_le {ε : ℝ} (hε : ε ≤ δ₀) {x y : X} (h : dist x y ≤ reduceScale ε) :
+  dist_image_le {ε : ℝ} {x y : X} (h : dist x y ≤ reduceScale ε) :
     dist (T x) (T y) ≤ ε
-  dist_image_symm_le {ε : ℝ} (hε : ε ≤ δ₀) {x y : X} (h : dist x y ≤ reduceScale ε) :
+  dist_image_symm_le {ε : ℝ} {x y : X} (h : dist x y ≤ reduceScale ε) :
     dist (T.symm x) (T.symm y) ≤ ε
 
 omit hT in
@@ -572,7 +572,7 @@ noncomputable irreducible_def reduceScaleStructDefault : hT.ReduceScaleStruct :=
       {⁅x, y⁆} = locUnstable T δ₀ x ∩ locStable T δ₀ y := by
     apply hδ₁ hx hy
     exact h.trans (by simp [reduceScale, not_le_of_gt hT.deltaZero_pos])
-  have dist_image_le {ε : ℝ} (hε : ε ≤ δ₀) {x y : X} (h : dist x y ≤ reduceScale ε) :
+  have dist_image_le {ε : ℝ} {x y : X} (h : dist x y ≤ reduceScale ε) :
       dist (T x) (T y) ≤ ε := by
     rcases le_or_gt ε 0 with hε | hε
     · have I : x = y := by rw [← dist_le_zero]; linarith [reduceScale_le_half_self (ε := ε)]
@@ -588,7 +588,7 @@ noncomputable irreducible_def reduceScaleStructDefault : hT.ReduceScaleStruct :=
       exact exists_lt_of_lt_ciSup (f := fun (t : Ioc 0 ε) ↦ f1 t / 2) J
     apply le_trans _ i_le
     apply h''f1 i i_pos _ _ (h.trans (by linarith))
-  have dist_image_symm_le {ε : ℝ} (hε : ε ≤ δ₀) {x y : X} (h : dist x y ≤ reduceScale ε) :
+  have dist_image_symm_le {ε : ℝ} {x y : X} (h : dist x y ≤ reduceScale ε) :
       dist (T.symm x) (T.symm y) ≤ ε := by
     rcases le_or_gt ε 0 with hε | hε
     · have I : x = y := by rw [← dist_le_zero]; linarith [reduceScale_le_half_self (ε := ε)]
@@ -692,13 +692,13 @@ lemma bracket_eq_inter_of_le
   rw [hT.bracket_eq_inter hx hy (h.trans (hT.reduceScale_mono hε))]
   exact inter_subset_inter (locUnstable_mono hε) (locStable_mono hε)
 
-lemma image_mem_locUnstable (hε : ε ≤ δ₀) (hx : x ∈ locUnstable T (hT.reduceScale ε) o) :
+lemma image_mem_locUnstable (hx : x ∈ locUnstable T (hT.reduceScale ε) o) :
     T x ∈ locUnstable T ε (T o) := by
   refine ⟨fun n ↦ ?_, ?_⟩
   · cases n with
     | zero =>
       simp only [iterate_zero, id_eq]
-      exact hT.dist_image_le hε (hx.1 0)
+      exact hT.dist_image_le (hx.1 0)
     | succ n =>
       simp only [iterate_succ_apply, Equiv.symm_apply_apply]
       apply (hx.1 n).trans
@@ -708,17 +708,17 @@ lemma image_mem_locUnstable (hε : ε ≤ δ₀) (hx : x ∈ locUnstable T (hT.r
     simp only [iterate_succ_apply, Equiv.symm_apply_apply]
     exact hx.2
 
-lemma image_symm_mem_locStable (hε : ε ≤ δ₀) (hx : x ∈ locStable T (hT.reduceScale ε) o) :
+lemma image_symm_mem_locStable (hx : x ∈ locStable T (hT.reduceScale ε) o) :
     T.symm x ∈ locStable T ε (T.symm o) :=
-  hT.symm.image_mem_locUnstable hε hx
+  hT.symm.image_mem_locUnstable hx
 
 lemma image_bracket (hx : x ∈ A) (hy : y ∈ A) (h : dist x y ≤ δ₂) : T ⁅x, y⁆ = ⁅T x, T y⁆ := by
   have h' : dist (T x) (T y) ≤ δ₁ := by
-    apply hT.dist_image_le hT.deltaOne_le_deltaZero h
+    apply hT.dist_image_le h
   suffices T ⁅x, y⁆ ∈ locUnstable T δ₀ (T x) ∩ locStable T δ₀ (T y) by
     simpa [← hT.bracket_eq_inter (hT.mapsTo hx) (hT.mapsTo hy) h'] using this
   refine ⟨?_, ?_⟩
-  · apply hT.image_mem_locUnstable le_rfl
+  · apply hT.image_mem_locUnstable
     exact hT.bracket_mem_locUnstable hx hy h hT.deltaOne_le_deltaZero
   · apply image_mem_locStable
     apply hT.bracket_mem_locStable hx hy ?_ le_rfl

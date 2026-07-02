@@ -11,22 +11,10 @@ import SmaleSpace.NonWandering
 open scoped Uniformity Topology
 open Function Set Filter Metric SetRel
 
-variable {X : Type*} [MetricSpace X] {T' : X → X} {T : X ≃ X} {A B : Set X}
-  {U V : Set (X × X)} {a b c o s u x y z : X} {ε ε' δ : ℝ} {n : ℕ}
-  [CompleteSpace X]
-
-namespace IsLocallyMaxHyperbolicSet
-
-variable (hT : IsLocallyMaxHyperbolicSet T A)
-include hT
-
-local notation3 "δ₀" => hT.deltaZero
-local notation3 "C₀" => hT.C0
-local notation3 "ρ" => hT.rho
-local notation3 "⁅" x ", " y "⁆" => hT.bracket x y
-
 /-- In a locally maximal hyperbolic set, periodic points are dense in the nonwandering set. -/
-theorem nonWanderingSetWithin_eq_closure_periodicPts_inter :
+theorem nonWanderingSetWithin_eq_closure_periodicPts_inter
+    {X : Type*} [MetricSpace X] [CompleteSpace X] {T : X ≃ X} {A : Set X}
+    (hT : IsLocallyMaxHyperbolicSet T A) :
     nonWanderingSetWithin T A = closure (periodicPts T ∩ A) := by
   apply Subset.antisymm ?_ closure_periodicPts_inter_subset_nonWanderingSetWithin
   intro x hx
@@ -48,5 +36,3 @@ theorem nonWanderingSetWithin_eq_closure_periodicPts_inter :
   _ ≤ ε' + δ / 2 := by gcongr; apply le_of_lt yx
   _ ≤ δ / 4 + δ / 2 := by gcongr; apply min_le_right
   _ < δ := by linarith
-
-end IsLocallyMaxHyperbolicSet
