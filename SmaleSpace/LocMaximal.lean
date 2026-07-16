@@ -785,10 +785,10 @@ lemma expansive_finite_time' (hx : x ∈ A) (hy : y ∈ A)
   · intro i hi
     exact h (i : ℤ) (by omega)
   · intro i hi
-    have : T.symm^[i] = ⇑(T ^ (-i : ℤ)) := by
-      simp only [Equiv.Perm.iterate_eq_pow, zpow_neg, zpow_natCast, DFunLike.coe_fn_eq]
+    have H (z) : T.symm^[i] z = (T ^ (-i : ℤ)) z := by
+      simp only [Equiv.Perm.iterate_eq_pow, zpow_neg, zpow_natCast]
       rfl
-    convert h (-i : ℤ) (by omega)
+    convert h (-i : ℤ) (by omega) <;> apply H
 
 /-- If two points follow each other, both in the past and in the future, then they coincide. -/
 lemma expansive (hx : x ∈ A) (hy : y ∈ A) (h : ∀ i, dist (T^[i] x) (T^[i] y) ≤ δ₂)
@@ -805,10 +805,10 @@ lemma expansive (hx : x ∈ A) (hy : y ∈ A) (h : ∀ i, dist (T^[i] x) (T^[i] 
 lemma expansive' (hx : x ∈ A) (hy : y ∈ A)
     (h : ∀ (i : ℤ), dist ((T ^ i) x) ((T ^ i) y) ≤ δ₂) : x = y := by
   apply hT.expansive hx hy (fun i ↦ h i) (fun i ↦ ?_)
-  have : T.symm^[i] = ⇑(T ^ (-i : ℤ)) := by
-    simp only [Equiv.Perm.iterate_eq_pow, zpow_neg, zpow_natCast, DFunLike.coe_fn_eq]
+  have H (z) : T.symm^[i] z = (T ^ (-i : ℤ)) z := by
+    simp only [Equiv.Perm.iterate_eq_pow, zpow_neg, zpow_natCast]
     rfl
-  convert h (-i : ℤ)
+  convert h (-i : ℤ) <;> apply H
 
 omit hT in
 lemma bracket_eq_bracket

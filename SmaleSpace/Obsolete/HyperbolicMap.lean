@@ -217,10 +217,10 @@ lemma expansive_finite_time' (h : ∀ (i : ℤ), i.natAbs ≤ n → dist ((T ^ i
   · intro i hi
     exact h (i : ℤ) (by omega)
   · intro i hi
-    have : T.symm^[i] = ⇑(T ^ (-i : ℤ)) := by
-      simp only [Equiv.Perm.iterate_eq_pow, zpow_neg, zpow_natCast, DFunLike.coe_fn_eq]
+    have H (z) : T.symm^[i] z = (T ^ (-i : ℤ)) z := by
+      simp only [Equiv.Perm.iterate_eq_pow, zpow_neg, zpow_natCast]
       rfl
-    convert h (-i : ℤ) (by omega)
+    convert h (-i : ℤ) (by omega) <;> apply H
 
 /-- If two points follow each other, both in the past and in the future, then they coincide. -/
 lemma expansive (h : ∀ i, dist (T^[i] x) (T^[i] y) ≤ δ₁)
@@ -236,10 +236,10 @@ lemma expansive (h : ∀ i, dist (T^[i] x) (T^[i] y) ≤ δ₁)
 /-- If two points follow each other, both in the past and in the future, then they coincide. -/
 lemma expansive' (h : ∀ (i : ℤ), dist ((T ^ i) x) ((T ^ i) y) ≤ δ₁) : x = y := by
   apply expansive (fun i ↦ h i) (fun i ↦ ?_)
-  have : T.symm^[i] = ⇑(T ^ (-i : ℤ)) := by
-    simp only [Equiv.Perm.iterate_eq_pow, zpow_neg, zpow_natCast, DFunLike.coe_fn_eq]
+  have H (z) : T.symm^[i] z = (T ^ (-i : ℤ)) z := by
+    simp only [Equiv.Perm.iterate_eq_pow, zpow_neg, zpow_natCast]
     rfl
-  convert h (-i : ℤ)
+  convert h (-i : ℤ) <;> apply H
 
 /-- Given a positive parameter `δ`, an integer `n` and a uniformly continuous map `f`, one may find
 `ε > 0` such that any `ε`-pseudo-orbit does not deviate from a genuine orbit by more than `δ`
@@ -491,7 +491,7 @@ lemma shadowing_precise'
   rcases Int.natAbs_eq n with hn | hn <;> set i := n.natAbs <;> rw [hn]
   · apply (hp i).1
   · convert (hp i).2
-    simp only [Equiv.Perm.iterate_eq_pow, zpow_neg, zpow_natCast, DFunLike.coe_fn_eq]
+    simp only [Equiv.Perm.iterate_eq_pow, zpow_neg, zpow_natCast]
     rfl
 
 /-- Let `δ > 0`. If `ε` is small enough, then any `ε`-pseudo-orbit can be `δ`-shadowed by a genuine

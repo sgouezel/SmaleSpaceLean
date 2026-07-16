@@ -189,19 +189,22 @@ protected def dist : Dist (Π n, E n) :=
 
 attribute [local instance] PiInt.dist
 
-theorem dist_eq_of_ne {x y : Π n, E n} (h : x ≠ y) : dist x y = (2⁻¹ : ℝ) ^ firstDiff x y := by
-  simp [dist, h]
+open scoped Classical in
+lemma dist_eq (x y : Π n, E n) : dist x y = if x ≠ y then (2⁻¹ : ℝ) ^ firstDiff x y else 0 := rfl
 
-protected theorem dist_self (x : Π n, E n) : dist x x = 0 := by simp [dist]
+theorem dist_eq_of_ne {x y : Π n, E n} (h : x ≠ y) : dist x y = (2⁻¹ : ℝ) ^ firstDiff x y := by
+  simp [dist_eq, h]
+
+protected theorem dist_self (x : Π n, E n) : dist x x = 0 := by simp [dist_eq]
 
 protected theorem dist_comm (x y : Π n, E n) : dist x y = dist y x := by
   classical
-  simp [dist, @eq_comm _ x y, firstDiff_comm]
+  simp [dist_eq, @eq_comm _ x y, firstDiff_comm]
 
 protected theorem dist_nonneg (x y : Π n, E n) : 0 ≤ dist x y := by
   rcases eq_or_ne x y with (rfl | h)
-  · simp [dist]
-  · simp [dist, h]
+  · simp [dist_eq]
+  · simp [dist_eq, h]
 
 theorem dist_triangle_nonarch (x y z : Π n, E n) : dist x z ≤ max (dist x y) (dist y z) := by
   rcases eq_or_ne x z with (rfl | hxz)
@@ -348,7 +351,7 @@ there will be two non-defeq uniform structures on `Π n, E n`, the product one a
 from the metric structure. In this case, use `metricSpaceOfDiscreteUniformity` instead. -/
 @[implicit_reducible]
 protected def metricSpace : MetricSpace (Π n, E n) :=
-  MetricSpace.ofDistTopology dist PiInt.dist_self PiInt.dist_comm PiInt.dist_triangle
+  fast_instance% MetricSpace.ofDistTopology dist PiInt.dist_self PiInt.dist_comm PiInt.dist_triangle
     isOpen_iff_dist PiInt.eq_of_dist_eq_zero
 
 /-- Metric space structure on `Π (n : ℤ), E n` when the spaces `E n` have the discrete uniformity,

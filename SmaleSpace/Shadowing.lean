@@ -254,7 +254,7 @@ lemma shadowing_precise'
   rcases Int.natAbs_eq n with hn | hn <;> set i := n.natAbs <;> rw [hn]
   · apply (hp i).1
   · convert (hp i).2
-    simp only [Equiv.Perm.iterate_eq_pow, zpow_neg, zpow_natCast, DFunLike.coe_fn_eq]
+    simp only [Equiv.Perm.iterate_eq_pow, zpow_neg, zpow_natCast]
     rfl
 
 end IsExtLocallyMaxHyperbolicSet

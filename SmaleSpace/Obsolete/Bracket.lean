@@ -284,7 +284,7 @@ instance : HasRuelleBracket (invDyn X) where
     have B : MapsTo (fun (p : X × X) ↦ p.swap)
       {p | dist p.1 p.2 ≤ δ₀} {p | dist p.1 p.2 ≤ δ₀} := by simp [MapsTo, dist_comm]
     exact (uniformContinuousOn_bracket X).comp A B
-  refl o := by simp [toInvDyn, ofInvDyn]
+  refl o := bracket_self (ofInvDyn o)
   bracket_left' x y z hxy hyz := by
     apply bracket_right (X := X)
     · rw [dist_comm]
