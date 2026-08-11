@@ -38,7 +38,7 @@ lemma nonWanderingSetWithin_mono (h : A ⊆ B) :
 lemma nonWonderingSetWithin_empty : nonWanderingSetWithin T ∅ = ∅ := by
   ext x
   simp only [nonWanderingSetWithin, Set.empty_inter, Set.mem_empty_iff_false, gt_iff_lt, false_and,
-    exists_false, imp_false, Set.mem_setOf_eq, iff_false, not_forall, not_not]
+    exists_false, imp_false, Set.mem_ofPred_eq, iff_false, not_forall, not_not]
   exact ⟨univ, by simp⟩
 
 lemma isClosed_nonWanderingSetWithin :
@@ -46,7 +46,7 @@ lemma isClosed_nonWanderingSetWithin :
   apply isClosed_iff_nhds.2 (fun x hx ↦ ?_)
   intro U hU
   rcases hx _ (eventually_mem_nhds_iff.2 hU) with ⟨y, hy⟩
-  simp only [nonWanderingSetWithin, Set.mem_inter_iff, gt_iff_lt, Set.mem_setOf_eq] at hy
+  simp only [nonWanderingSetWithin, Set.mem_inter_iff, gt_iff_lt, Set.mem_ofPred_eq] at hy
   grind
 
 lemma periodicPts_inter_subset_nonWanderingSetWithin :

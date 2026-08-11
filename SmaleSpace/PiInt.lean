@@ -56,7 +56,7 @@ theorem apply_firstDiff_ne_or {x y : Π n, E n} (h : x ≠ y) :
     contrapose! h
     ext j
     rcases Int.eq_nat_or_neg j with ⟨w, rfl | rfl⟩ <;> grind
-  rw [firstDiff_def, dif_pos h']
+  rw [firstDiff_def, dite_eq_left h']
   classical
   apply Nat.find_spec h'
 
@@ -360,14 +360,14 @@ where the distance is given by `dist x y = (1/2)^n`, where `n` is the smallest i
 @[implicit_reducible]
 protected def metricSpaceOfDiscreteUniformity {E : ℤ → Type*} [∀ n, UniformSpace (E n)]
     (h : ∀ n, uniformity (E n) = 𝓟 SetRel.id) : MetricSpace (Π n, E n) :=
-  haveI : ∀ n, DiscreteTopology (E n) := fun n => discreteTopology_of_discrete_uniformity (h n)
+  haveI A n : DiscreteTopology (E n) := discreteTopology_of_discrete_uniformity (h n)
   { dist_triangle := PiInt.dist_triangle
     dist_comm := PiInt.dist_comm
     dist_self := PiInt.dist_self
     eq_of_dist_eq_zero := PiInt.eq_of_dist_eq_zero _ _
     toUniformSpace := Pi.uniformSpace _
     uniformity_dist := by
-      simp only [Pi.uniformity, h, SetRel.id, comap_principal, preimage_setOf_eq]
+      simp only [Pi.uniformity, h, SetRel.id, comap_principal, preimage_ofPred_eq]
       apply le_antisymm
       · simp only [le_iInf_iff, le_principal_iff]
         intro ε εpos
@@ -375,10 +375,10 @@ protected def metricSpaceOfDiscreteUniformity {E : ℤ → Type*} [∀ n, Unifor
         apply
           @mem_iInf_of_iInter _ _ _ _ _ (Finset.Ioo (-n : ℤ) n).finite_toSet fun i =>
             { p : (Π n : ℤ, E n) × (Π n : ℤ, E n) | p.fst i = p.snd i }
-        · simp only [mem_principal, setOf_subset_setOf, imp_self, imp_true_iff]
+        · simp [mem_principal]
         · rintro ⟨x, y⟩ hxy
-          simp only [SetLike.coe_sort_coe, mem_iInter, mem_setOf_eq, Subtype.forall, Finset.mem_Ioo,
-            and_imp] at hxy
+          simp only [SetLike.coe_sort_coe, mem_iInter, mem_ofPred_eq, Subtype.forall,
+            Finset.mem_Ioo, and_imp] at hxy
           apply lt_of_le_of_lt _ hn
           rw [← mem_cylinder_iff_dist_le, mem_cylinder_iff]
           exact hxy
@@ -386,7 +386,7 @@ protected def metricSpaceOfDiscreteUniformity {E : ℤ → Type*} [∀ n, Unifor
         intro n
         refine mem_iInf_of_mem (2⁻¹ ^ n.natAbs : ℝ) ?_
         refine mem_iInf_of_mem (by positivity) ?_
-        simp only [mem_principal, setOf_subset_setOf, Prod.forall]
+        simp only [mem_principal, ofPred_subset_ofPred, Prod.forall]
         intro x y hxy
         exact apply_eq_of_dist_lt hxy (by grind) (by grind) }
 

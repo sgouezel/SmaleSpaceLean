@@ -237,10 +237,10 @@ lemma shiftBracket_eq_locUnstable_inter_locStable {x y : ℤ → 𝓐} (h : dist
     exact h _ (by norm_num) (by norm_num)
   rw [locStable_shift, locUnstable_shift]
   apply Subset.antisymm
-  · simp only [ge_iff_le, subset_inter_iff, singleton_subset_iff, mem_setOf_eq, shiftBracket, A,
+  · simp only [ge_iff_le, subset_inter_iff, singleton_subset_iff, mem_ofPred_eq, shiftBracket, A,
       ↓reduceIte, left_eq_ite_iff, not_le, right_eq_ite_iff]
     grind
-  · simp only [ge_iff_le, subset_singleton_iff, mem_inter_iff, mem_setOf_eq, and_imp]
+  · simp only [ge_iff_le, subset_singleton_iff, mem_inter_iff, mem_ofPred_eq, and_imp]
     intro z hz h'z
     ext i
     simp only [shiftBracket, A, ↓reduceIte]

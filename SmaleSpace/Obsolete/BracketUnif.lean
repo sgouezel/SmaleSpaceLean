@@ -253,7 +253,7 @@ lemma bracket_eq_of_mem_locStable (hs : s ∈ locStable U o) : ⁅s, o⁆ = s :=
 
 lemma locStable_eq (hU : SmallEnough U) : locStable U o = {s | (s, o) ∈ U ∧ ⁅o, s⁆ = o} := by
   ext s
-  simp only [locStable, mem_setOf_eq, and_congr_right_iff]
+  simp only [locStable, mem_ofPred_eq, and_congr_right_iff]
   intro h
   refine ⟨fun h' ↦ ?_, fun h' ↦ ?_⟩
   · rw [← h', bracket_right, bracket_self]
@@ -269,7 +269,7 @@ lemma bracket_eq_of_mem_locUnstable (hu : u ∈ locUnstable U o) : ⁅o, u⁆ = 
 
 lemma locUnstable_eq (hU : SmallEnough U) : locUnstable U o = {u | (o, u) ∈ U ∧ ⁅u, o⁆ = o} := by
   ext u
-  simp only [locUnstable, mem_setOf_eq, and_congr_right_iff]
+  simp only [locUnstable, mem_ofPred_eq, and_congr_right_iff]
   intro h
   refine ⟨fun h' ↦ ?_, fun h' ↦ ?_⟩
   · rw [← h', bracket_left, bracket_self]
@@ -295,7 +295,7 @@ def SmallEnough.localProductEquiv (hU : SmallEnough U) (o : X) : PartialEquiv (X
     rintro ⟨s, u⟩ ⟨hs, hu⟩
     have h's : (s, o) ∈ U := mem_of_mem_locStable hs
     have h'u : (o, u) ∈ U := mem_of_mem_locUnstable hu
-    simp only [mem_setOf_eq]
+    simp only [mem_ofPred_eq]
     refine ⟨?_, ?_, ?_⟩
     · apply hU.bracket_mem h's h'u
     · rwa [bracket_right, bracket_eq_of_mem_locUnstable hu]
@@ -360,7 +360,7 @@ lemma SmallEnough.bracketRoot_subset_target_localProductEquiv (hU : SmallEnough 
   by_cases h'U : U ∈ 𝓤 X; swap
   · simp [bracketRoot, h'U, UniformSpace.ball]
   intro y (hy : (o, y) ∈ bracketRoot U)
-  simp only [localProductEquiv_target, mem_setOf_eq]
+  simp only [localProductEquiv_target, mem_ofPred_eq]
   have hoo : (o, o) ∈ bracketRoot U := mem_uniformity_of_eq (bracketRoot_mem_unif h'U) rfl
   refine ⟨?_, ?_, ?_⟩
   · apply hU.subset_mainEnt

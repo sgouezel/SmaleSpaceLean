@@ -64,7 +64,7 @@ export HasRuelleBracketWithMap (lambda_pos lambda_lt_one bracket_image expansion
 lemma bracket_image_symm [h : HasRuelleBracketWithMap X] (h : dist x y ≤ δ₀)
     (h' : dist (T.symm x) (T.symm y) ≤ δ₀) :
     ⁅T.symm x, T.symm y⁆ = T.symm ⁅x, y⁆ := by
-  rw [← Equiv.apply_eq_iff_eq_symm_apply]
+  rw [Equiv.eq_symm_apply]
   simpa using (bracket_image h' (by simpa using h)).symm
 
 /-- If `T` is a hyperbolic map on a space `X`, then `T⁻¹` is also hyperbolic (with respect to the
@@ -91,7 +91,7 @@ lemma continuous_Tsymm : Continuous T.symm := unifCont_Tsymm.continuous
 
 lemma image_mem_locStable (hε : ε ≤ δ₀) (h : x ∈ locStable ε o) :
     T x ∈ locStable (λ * ε) (T o) := by
-  simp only [locStable, mem_setOf_eq]
+  simp only [locStable, mem_ofPred_eq]
   have A : dist (T o) (T x) ≤ λ * ε := by
     apply (contraction (locStable_mono hε h)).trans
     gcongr

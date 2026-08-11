@@ -45,7 +45,7 @@ lemma mem_locUnstable_iff_symm : x ∈ locUnstable T ε o ↔ o ∈ locUnstable 
   mem_locStable_iff_symm
 
 lemma locStable_mono (h : ε ≤ ε') : locStable T' ε o ⊆ locStable T' ε' o := by
-  simp only [locStable, setOf_subset_setOf, and_imp]
+  simp only [locStable, ofPred_subset_ofPred, and_imp]
   grind
 
 lemma locUnstable_mono (h : ε ≤ ε') : locUnstable T ε o ⊆ locUnstable T ε' o :=
@@ -61,7 +61,7 @@ lemma locUnstable_min : locUnstable T (min ε ε') o = locUnstable T ε o ∩ lo
 
 @[simp] lemma locStable_zero : locStable T' 0 o = {o} := by
   apply Subset.antisymm (fun y hy ↦ ?_) (fun y hy ↦ ?_)
-  · simp [locStable, dist_le_zero, mem_setOf_eq] at hy
+  · simp [locStable, dist_le_zero, mem_ofPred_eq] at hy
     simpa using (hy.1 0).symm
   · simp only [mem_singleton_iff] at hy
     simp [locStable, hy]
@@ -83,7 +83,7 @@ lemma self_mem_locUnstable (hε : 0 ≤ ε) : o ∈ locUnstable T ε o :=
 
 lemma locStable_eq_empty_of_neg (hε : ε < 0) : locStable T' ε o = ∅ := by
   ext x
-  simp only [locStable, mem_setOf_eq, mem_empty_iff_false, iff_false, not_and]
+  simp only [locStable, mem_ofPred_eq, mem_empty_iff_false, iff_false, not_and]
   intro h
   linarith [h 0, dist_nonneg (x := T'^[0] o) (y := T'^[0] x)]
 
@@ -370,7 +370,7 @@ lemma tendsto_bracket_fst :
   have M₂ : ((a, a), (a, b)) ∈ t₂ := by
     simp only [mem_principal] at h₂
     apply h₂
-    simp only [mem_inter_iff, mem_setOf_eq, mem_prod] at hab
+    simp only [mem_inter_iff, mem_ofPred_eq, mem_prod] at hab
     simp [hT.deltaZero_pos.le, hab.1.1.1.le, hab.2]
   have : ((a, a), (a, b)) ∈ t₁ ∩ t₂ := ⟨M₁, M₂⟩
   simpa [← hV']
@@ -489,7 +489,7 @@ noncomputable irreducible_def reduceScaleStructDefault : hT.ReduceScaleStruct :=
   have B (t : ℝ) (ht : 0 < t) : BddAbove (range (fun (x : Ioc 0 t) ↦ f1 x / 2)) := by
     refine ⟨t / 2 / 2, ?_⟩
     simp only [upperBounds, mem_range, Subtype.exists, mem_Ioc, exists_prop,
-      forall_exists_index, and_imp, mem_setOf_eq]
+      forall_exists_index, and_imp, mem_ofPred_eq]
     rintro a x hx h'x rfl
     gcongr
     apply (hf1 x hx).2.trans
@@ -875,9 +875,9 @@ protected noncomputable def inter
   uniformContinuousOn_bracket := by
     apply (hA.uniformContinuousOn_bracket.mono ?_).congr
     · intro p hp
-      simp only [mem_prod, mem_inter_iff, mem_setOf_eq] at hp
+      simp only [mem_prod, mem_inter_iff, mem_ofPred_eq] at hp
       simp [hp.1, uncurry]
-    simp +contextual only [le_inf_iff, mem_prod, mem_inter_iff, setOf_subset_setOf, and_self,
+    simp +contextual only [le_inf_iff, mem_prod, mem_inter_iff, ofPred_subset_ofPred, and_self,
       and_true, and_imp, Prod.forall]
     rintro a b h - - - - -
     apply h.trans

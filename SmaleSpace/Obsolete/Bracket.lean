@@ -121,7 +121,7 @@ lemma tendsto_bracket_fst : Tendsto (fun (p : X × X) ↦ (p.1, ⁅p.1, p.2⁆))
   have M₂ : ((a, a), (a, b)) ∈ t₂ := by
     simp only [mem_principal] at h₂
     apply h₂
-    simp only [mem_inter_iff, mem_setOf_eq] at hab
+    simp only [mem_inter_iff, mem_ofPred_eq] at hab
     simp [deltaZero_pos.le, hab.1.1.le]
   have : ((a, a), (a, b)) ∈ t₁ ∩ t₂ := ⟨M₁, M₂⟩
   simpa [← hV']
@@ -338,7 +338,7 @@ lemma bracket_eq_of_mem_locUnstable (hu : u ∈ locUnstable ε o) : ⁅o, u⁆ =
 lemma locStable_eq (hε : ε ≤ δ₀) : locStable ε o = {s | dist o s ≤ ε ∧ ⁅o, s⁆ = o} := by
   ext s
   have : dist o s = dist s o := dist_comm o s
-  simp only [locStable, mem_setOf_eq, and_congr_right_iff]
+  simp only [locStable, mem_ofPred_eq, and_congr_right_iff]
   intro h
   refine ⟨fun h' ↦ ?_, fun h' ↦ ?_⟩
   · rw [← h', bracket_right, bracket_self] <;> linarith
@@ -385,7 +385,7 @@ lemma bracket_mem_locUnstable [HasReduceScale X] (hx : dist o x ≤ reduceScale 
   bracket_mem_locStable (X := invDyn X) hx
 
 lemma locStable_mono {ε ε' : ℝ} (h : ε ≤ ε') : locStable ε o ⊆ locStable ε' o := by
-  simp only [locStable, setOf_subset_setOf, and_imp]
+  simp only [locStable, ofPred_subset_ofPred, and_imp]
   grind
 
 lemma locUnstable_mono {ε ε' : ℝ} (h : ε ≤ ε') : locUnstable ε o ⊆ locUnstable ε' o :=
@@ -393,7 +393,7 @@ lemma locUnstable_mono {ε ε' : ℝ} (h : ε ≤ ε') : locUnstable ε o ⊆ lo
 
 @[simp] lemma locStable_zero : locStable 0 o = {o} := by
   apply Subset.antisymm (fun y hy ↦ ?_) (fun y hy ↦ ?_)
-  · simp only [locStable, dist_le_zero, mem_setOf_eq] at hy
+  · simp only [locStable, dist_le_zero, mem_ofPred_eq] at hy
     simp [hy.1]
   · simp only [mem_singleton_iff] at hy
     simp [locStable, hy]
@@ -460,7 +460,7 @@ def localProductEquiv (hε : ε ≤ δ₁) (o : X) : PartialEquiv (X × X) X whe
     have : dist s u ≤ δ₀ := by
       linarith [dist_triangle_left s u o, deltaOne_le_half_deltaZero (X := X)]
     have := deltaOne_le_deltaZero (X := X)
-    simp only [mem_setOf_eq]
+    simp only [mem_ofPred_eq]
     refine ⟨?_, ?_, ?_⟩
     · exact dist_bracket_le_deltaZero (by linarith) (by linarith)
     · rwa [bracket_right, bracket_eq_of_mem_locUnstable hu] <;> linarith
@@ -470,7 +470,7 @@ def localProductEquiv (hε : ε ≤ δ₁) (o : X) : PartialEquiv (X × X) X whe
         linarith
   map_target' := by
     rintro x ⟨hx_main, hx, h'x⟩
-    simp only [locStable, locUnstable, mem_prod, mem_setOf_eq, h'x, true_and, hx]
+    simp only [locStable, locUnstable, mem_prod, mem_ofPred_eq, h'x, true_and, hx]
     rw [bracket_left, bracket_right] <;> simp [deltaZero_pos.le, dist_comm, hx_main]
   left_inv' := by
     rintro ⟨s, u⟩ ⟨hs, hu⟩
@@ -503,7 +503,7 @@ lemma continuousOn_localProductEquiv (hε : ε ≤ δ₁) :
     ContinuousOn (localProductEquiv hε o) (localProductEquiv hε o).source := by
   apply (continuousOn_bracket X).mono
   rintro ⟨s, u⟩ ⟨⟨hs, h's⟩, ⟨hu, h'u⟩⟩
-  simp only [mem_setOf_eq] at hs hu ⊢
+  simp only [mem_ofPred_eq] at hs hu ⊢
   linarith [dist_triangle_left s u o, deltaOne_le_half_deltaZero (X := X)]
 
 lemma continuousOn_symm_localProductEquiv (hε : ε ≤ δ₁) :
@@ -531,7 +531,7 @@ lemma closedBall_reduceScale_subset_target_localProductEquiv (hε : ε ≤ δ₁
     simp [this, deltaZero_pos.le]
   intro y (hy : dist y o ≤ reduceScale X ε)
   rw [dist_comm] at hy
-  simp only [localProductEquiv_target, mem_setOf_eq]
+  simp only [localProductEquiv_target, mem_ofPred_eq]
   refine ⟨?_, ?_, ?_⟩
   · exact hy.trans reduceScale_le_deltaZero
   · apply dist_bracket_le_of_le_reduceScale _ hy
