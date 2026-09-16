@@ -463,11 +463,10 @@ def localProductEquiv (hε : ε ≤ δ₁) (o : X) : PartialEquiv (X × X) X whe
     simp only [mem_ofPred_eq]
     refine ⟨?_, ?_, ?_⟩
     · exact dist_bracket_le_deltaZero (by linarith) (by linarith)
-    · rwa [bracket_right, bracket_eq_of_mem_locUnstable hu] <;> linarith
+    · rwa [bracket_right, bracket_eq_of_mem_locUnstable hu]; linarith
     · rwa [bracket_left, bracket_eq_of_mem_locStable hs]
-      · linarith
-      · rw [dist_comm]
-        linarith
+      rw [dist_comm]
+      linarith
   map_target' := by
     rintro x ⟨hx_main, hx, h'x⟩
     simp only [locStable, locUnstable, mem_prod, mem_ofPred_eq, h'x, true_and, hx]
